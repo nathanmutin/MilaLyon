@@ -48,8 +48,16 @@ def load_csv_data(data_path, sub_sample=False):
     test_ids = x_test[:, 0].astype(dtype=int)
     x_train = x_train[:, 1:]
     x_test = x_test[:, 1:]
+    
+      # --- Get column names from headers ---
+    with open(os.path.join(data_path, "x_train.csv"), "r") as f:
+        train_columns = f.readline().strip().split(",")[1:]  # skip "Id"
 
-    return x_train, x_test, y_train, train_ids, test_ids
+    with open(os.path.join(data_path, "x_test.csv"), "r") as f:
+        test_columns = f.readline().strip().split(",")[1:]  # skip "Id"
+
+    return x_train, x_test, y_train, train_ids, test_ids, train_columns, test_columns
+
 
 
 def create_csv_submission(ids, y_pred, name):
