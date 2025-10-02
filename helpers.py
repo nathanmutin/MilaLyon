@@ -61,12 +61,13 @@ def load_csv_data(data_path, sub_sample=False):
         # No header
         # First column is feature name, second, third, ... are default values
         reader = csv.reader(f, delimiter=",")
-        default_values = []
+        default_values = dict()
         for row in reader:
-            default_values.append([])  # in case no valid default value is found
+            feature_name = row[0]
+            default_values[feature_name] = []
             for val in row[1:]:
                 try:
-                    default_values[-1].append(float(val))
+                    default_values[feature_name].append(float(val))
                 except ValueError:
                     pass  # skip non-numeric default values
 
