@@ -9,8 +9,8 @@ def normalize(x, x_test=None):
     Returns:
         np.array: shape=(N,D) normalized feature matrix
     """
-    mean_x = np.mean(x, axis=0)
-    std_x = np.std(x, axis=0)
+    mean_x = np.nanmean(x, axis=0)
+    std_x = np.nanstd(x, axis=0)
     std_x[std_x == 0] = 1.0  # avoid division by zero    
     
     x = (x - mean_x) / std_x
