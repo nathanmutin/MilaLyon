@@ -207,3 +207,44 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     raise NotImplementedError
 
 
+import numpy as np
+
+def mean_imputation(x_train, x_test, train_columns):
+    """Impute missing values with the mean of each feature. 
+    Drops columns that are entirely NaN.
+
+    Args:
+        x_train (np.array): shape=(N,D) training feature matrix with NaNs for missing values
+        x_test (np.array): shape=(M,D) test feature matrix with NaNs for missing values
+
+    Returns:
+        tuple: (x_train_imputed, x_test_imputed)
+            x_train_imputed (np.array): training feature matrix with imputed values
+            x_test_imputed (np.array): test feature matrix with imputed values
+    """
+    # Mask for columns that are not entirely NaN
+    valid_mask = ~np.isnan(x_train).all(axis=0)
+        
+    # Print indices of dropped columns
+    dropped_indices = np.where(~valid_mask)[0]
+    print("Dropped columns (all NaN):", [ train_columns[i] for i in dropped_indices ])
+    
+    
+    # Keep only valid columns in train and test
+    x_train = x_train[:, valid_mask]
+    x_test = x_test[:, valid_mask]
+
+    # Compute means on the training set (ignoring NaNs)
+    mean_x = np.nanmean(x_train, axis=0)
+
+    # Impute training set
+    inds_train = np.where(np.isnan(x_train))
+    x_train[inds_train] = np.take(mean_x, inds_train[1])
+
+    # Impute test set using train means
+    inds_test = np.where(np.isnan(x_test))
+    x_test[inds_test] = np.take(mean_x, inds_test[1])
+    
+    print("New shape after mean imputation:", x_train.shape)
+
+    return x_train, x_test
