@@ -207,8 +207,6 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     raise NotImplementedError
 
 
-import numpy as np
-
 def mean_imputation(x_train, x_test, train_columns):
     """Impute missing values with the mean of each feature. 
     Drops columns that are entirely NaN.
