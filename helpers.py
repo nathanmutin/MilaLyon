@@ -18,7 +18,7 @@ def load_csv_data(data_path, sub_sample=False):
         y_train (np.array): labels for training data in format (-1,1)
         train_ids (np.array): ids of training data
         test_ids (np.array): ids of test data
-        feature_names (list): list of feature names for training data
+        feature_names (np.array): list of feature names for training data
         default_values (list of lists): list of default values for each feature
     """
     max_rows = None
@@ -54,7 +54,8 @@ def load_csv_data(data_path, sub_sample=False):
     # --- Get column names from headers ---
     with open(os.path.join(data_path, "x_train.csv"), "r") as f:
         feature_names = f.readline().strip().split(",")[1:]  # skip "Id"
-        
+    feature_names = np.array(feature_names)
+    
     # The file "default_values.csv" contains default values for each feature
     with open(os.path.join(data_path, "default_values.csv"), "r") as f:
         # No header
