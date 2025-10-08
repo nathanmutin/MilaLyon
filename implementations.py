@@ -172,6 +172,24 @@ def ridge_regression(y, tx, lambda_):
     w = np.linalg.solve(tx.T @ tx + 2 * N * lambda_ * np.eye(D), tx.T @ y)
     return w, mse(y, tx, w)
 
+def sigmoid(t):
+    """apply sigmoid function on t.
+
+    Args:
+        t: scalar or numpy array
+
+    Returns:
+        scalar or numpy array
+
+    >>> sigmoid(np.array([0.1]))
+    array([0.52497919])
+    >>> sigmoid(np.array([0.1, 0.1]))
+    array([0.52497919, 0.52497919])
+    """
+    sigmoid = 1/(1 + np.exp(-t))
+    
+    return sigmoid
+
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """Logistic regression using gradient descent (y ∈ {0,1}).
 
@@ -186,7 +204,23 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         w (np.array): shape=(D,) final weights
         loss (float): final loss value
     """
-    raise NotImplementedError
+        # initialize weights
+    w = initial_w.copy()
+    
+    for n_iter in range(max_iters):
+        
+        pred = sigmoid(tx @ w)  # shape (N,1)
+        
+        # compute gradient
+        gradient = tx.T @ (pred - y) / y.shape[0]  # shape (D,1)
+        
+        # update weights
+        w -= gamma * gradient
+        
+        # compute loss
+        loss = np.mean(-y * np.log(pred ) - (1 - y) * np.log(1 - pred))
+        
+    return w, loss
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Regularized logistic regression using gradient descent
@@ -204,8 +238,22 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         w (np.array): shape=(D,) final weights
         loss (float): final loss value
     """
-    raise NotImplementedError
-
+    w = initial_w.copy()
+    
+    for n_iter in range(max_iters):
+        # predictions
+        pred = sigmoid(tx @ w)  # shape (N,1)
+        
+        # gradient with L2 regularization
+        gradient = (tx.T @ (pred - y)) / y.shape[0] + 2 * lambda_ * w  # shape (D,1)
+        
+        # update weights
+        w -= gamma * gradient
+        
+        # compute regularized loss
+        loss = np.mean(-y * np.log(pred) - (1 - y) * np.log(1 - pred)) # In the labs it didn't want lmabda in the loss+ lambda_ * np.sum(w**2)
+        
+    return w, loss
 
 def mean_imputation(x_train, x_test, train_columns):
     """Impute missing values with the mean of each feature. 
