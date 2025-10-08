@@ -9,14 +9,36 @@ def normalize(x, x_test=None):
     Returns:
         np.array: shape=(N,D) normalized feature matrix
     """
-    mean_x = np.mean(x, axis=0)
-    std_x = np.std(x, axis=0)
+    mean_x = np.nanmean(x, axis=0)
+    std_x = np.nanstd(x, axis=0)
     std_x[std_x == 0] = 1.0  # avoid division by zero    
     
     x = (x - mean_x) / std_x
     
     if x_test is not None:
         x_test = (x_test - mean_x) / std_x
+        return x, x_test
+    return x
+
+def min_max_normalize(x, x_test=None):
+    """Min-max normalizes the data set to the range [0, 1].
+
+    Args:
+        x (np.array): shape=(N,D) feature matrix
+
+    Returns:
+        np.array: shape=(N,D) normalized feature matrix
+    """
+
+    min_x = np.nanmin(x, axis=0)
+    max_x = np.nanmax(x, axis=0)
+    range_x = max_x - min_x  
+    range_x[range_x == 0] = 1. # avoid division by zero 
+
+    x = (x - min_x) / range_x
+    
+    if x_test is not None:
+        x_test = (x_test - min_x) / range_x
         return x, x_test
     return x
 

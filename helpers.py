@@ -18,6 +18,8 @@ def load_csv_data(data_path, sub_sample=False):
         y_train (np.array): labels for training data in format (-1,1)
         train_ids (np.array): ids of training data
         test_ids (np.array): ids of test data
+        feature_names (np.array): list of feature names for training data
+        default_values (list of lists): list of default values for each feature
     """
     max_rows = None
     if sub_sample:
@@ -49,15 +51,27 @@ def load_csv_data(data_path, sub_sample=False):
     x_train = x_train[:, 1:]
     x_test = x_test[:, 1:]
     
-      # --- Get column names from headers ---
+    # --- Get column names from headers ---
     with open(os.path.join(data_path, "x_train.csv"), "r") as f:
-        train_columns = f.readline().strip().split(",")[1:]  # skip "Id"
+        feature_names = f.readline().strip().split(",")[1:]  # skip "Id"
+    feature_names = np.array(feature_names)
+    
+    # The file "default_values.csv" contains default values for each feature
+    with open(os.path.join(data_path, "default_values.csv"), "r") as f:
+        # No header
+        # First column is feature name, second, third, ... are default values
+        reader = csv.reader(f, delimiter=",")
+        default_values = dict()
+        for row in reader:
+            feature_name = row[0]
+            default_values[feature_name] = []
+            for val in row[1:]:
+                try:
+                    default_values[feature_name].append(float(val))
+                except ValueError:
+                    pass  # skip non-numeric default values
 
-    with open(os.path.join(data_path, "x_test.csv"), "r") as f:
-        test_columns = f.readline().strip().split(",")[1:]  # skip "Id"
-
-    return x_train, x_test, y_train, train_ids, test_ids, train_columns, test_columns
-
+    return x_train, x_test, y_train, train_ids, test_ids, feature_names, default_values
 
 
 def create_csv_submission(ids, y_pred, name):
