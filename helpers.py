@@ -62,8 +62,14 @@ def load_csv_data(data_path, sub_sample=False):
         # First column is feature name, second, third, ... are default values
         reader = csv.reader(f, delimiter=",")
         default_values = dict()
-        for row in reader:
+        for i, row in enumerate(reader):
+            # First column is feature name
             feature_name = row[0]
+            
+            # Check that feature_name matches the i-th feature of the dataset
+            if feature_name != feature_names[i]:
+                raise ValueError(f"Feature n°{i} mismatch in default_values.csv: {feature_name} != {feature_names[i]}")
+
             default_values[feature_name] = []
             for val in row[1:]:
                 try:
