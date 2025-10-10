@@ -1,87 +1,5 @@
 import numpy as np
 
-def normalize(x, x_test=None):
-    """Normalizes the data set.
-
-    Args:
-        x (np.array): shape=(N,D) feature matrix
-
-    Returns:
-        np.array: shape=(N,D) normalized feature matrix
-    """
-    mean_x = np.nanmean(x, axis=0)
-    std_x = np.nanstd(x, axis=0)
-    std_x[std_x == 0] = 1.0  # avoid division by zero    
-    
-    x = (x - mean_x) / std_x
-    
-    if x_test is not None:
-        x_test = (x_test - mean_x) / std_x
-        return x, x_test
-    return x
-
-def min_max_normalize(x, x_test=None):
-    """Min-max normalizes the data set to the range [0, 1].
-
-    Args:
-        x (np.array): shape=(N,D) feature matrix
-
-    Returns:
-        np.array: shape=(N,D) normalized feature matrix
-    """
-
-    min_x = np.nanmin(x, axis=0)
-    max_x = np.nanmax(x, axis=0)
-    range_x = max_x - min_x  
-    range_x[range_x == 0] = 1. # avoid division by zero 
-
-    x = (x - min_x) / range_x
-    
-    if x_test is not None:
-        x_test = (x_test - min_x) / range_x
-        return x, x_test
-    return x
-
-def mean_imputation(x_train, x_test, train_columns):
-    """Impute missing values with the mean of each feature. 
-    Drops columns that are entirely NaN.
-
-    Args:
-        x_train (np.array): shape=(N,D) training feature matrix with NaNs for missing values
-        x_test (np.array): shape=(M,D) test feature matrix with NaNs for missing values
-
-    Returns:
-        tuple: (x_train_imputed, x_test_imputed)
-            x_train_imputed (np.array): training feature matrix with imputed values
-            x_test_imputed (np.array): test feature matrix with imputed values
-    """
-    # Mask for columns that are not entirely NaN
-    valid_mask = ~np.isnan(x_train).all(axis=0)
-        
-    # Print indices of dropped columns
-    dropped_indices = np.where(~valid_mask)[0]
-    print("Dropped columns (all NaN):", [ train_columns[i] for i in dropped_indices ])
-    
-    
-    # Keep only valid columns in train and test
-    x_train = x_train[:, valid_mask]
-    x_test = x_test[:, valid_mask]
-
-    # Compute means on the training set (ignoring NaNs)
-    mean_x = np.nanmean(x_train, axis=0)
-
-    # Impute training set
-    inds_train = np.where(np.isnan(x_train))
-    x_train[inds_train] = np.take(mean_x, inds_train[1])
-
-    # Impute test set using train means
-    inds_test = np.where(np.isnan(x_test))
-    x_test[inds_test] = np.take(mean_x, inds_test[1])
-    
-    print("New shape after mean imputation:", x_train.shape)
-
-    return x_train, x_test
-
 def mae(y, tx, w):
     """Compute the Mean Absolute Error (MAE)
     
@@ -234,6 +152,17 @@ def ridge_regression(y, tx, lambda_):
     w = np.linalg.solve(tx.T @ tx + 2 * N * lambda_ * np.eye(D), tx.T @ y)
     return w, mse(y, tx, w)
 
+def sigmoid(t):
+    """Apply the sigmoid function on t.
+
+    Args:
+        t (np.array): input data
+
+    Returns:
+        np.array: sigmoid(t)
+    """
+    return 1 / (1 + np.exp(-t))
+
 def logistic_negative_log_likelihood(y, tx, w):
     """Compute the negative log likelihood for logistic regression.
 
@@ -267,7 +196,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     w = initial_w
     for _ in range(max_iters):
         # gradient descent step
-        pred = 1 / (1 + np.exp(-(tx @ w)))  # sigmoid function
+        pred = sigmoid(tx @ w)  # sigmoid function
         gradient = tx.T @ (pred - y) / len(y)  # gradient of the loss
         w -= gamma * gradient
 
@@ -293,7 +222,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     w = initial_w
     for _ in range(max_iters):
         # gradient descent step
-        pred = 1 / (1 + np.exp(-(tx @ w)))  # sigmoid function
+        pred = sigmoid(tx @ w)  # sigmoid function
         gradient = tx.T @ (pred - y) / len(y) + 2 * lambda_ * w  # gradient of the regularized loss
         w -= gamma * gradient
 

@@ -3,14 +3,14 @@ import numpy as np
 import os
 
 
-def load_csv_data(data_path, sub_sample=False):
+def load_csv_data(data_path, max_rows = None):
     """
     This function loads the data and returns the respectinve numpy arrays.
     Remember to put the 3 files in the same folder and to not change the names of the files.
 
     Args:
         data_path (str): datafolder path
-        sub_sample (bool, optional): If True the data will be subsempled. Default to False.
+        max_rows (int, optional): If specified, limits the number of rows loaded from each file.
 
     Returns:
         x_train (np.array): training data
@@ -19,11 +19,12 @@ def load_csv_data(data_path, sub_sample=False):
         train_ids (np.array): ids of training data
         test_ids (np.array): ids of test data
         feature_names (np.array): list of feature names for training data
-        default_values (list of lists): list of default values for each feature
+        zero_values (dict): dictionary of values representing zero for each feature
+        default_values (dict of lists): dictionary of default values for each feature
+        useless (np.array): boolean array indicating if a feature is useless because is only a simple combination of other features
+        better_elsewhere (np.array): boolean array indicating if a feature has a better format elsewhere
+        bad_format_no_better (np.array): boolean array indicating if a feature is in bad format with no better alternative
     """
-    max_rows = None
-    if sub_sample:
-        max_rows = 500
     
     y_train = np.genfromtxt(
         os.path.join(data_path, "y_train.csv"),
@@ -57,11 +58,28 @@ def load_csv_data(data_path, sub_sample=False):
     feature_names = np.array(feature_names)
     
     # The file "default_values.csv" contains default values for each feature
+    # First line is header
+    # Columns are:
+    # - Feature
+    # - Value for zero
+    # - Combination of other indicators
+    # - Bad format, better format elsewhere
+    # - Bad format, no better
+    # - Value for no response 1
+    # - Value for no response 2
+    # - ...
     with open(os.path.join(data_path, "default_values.csv"), "r") as f:
-        # No header
-        # First column is feature name, second, third, ... are default values
         reader = csv.reader(f, delimiter=",")
+        next(reader) # Skip header
+        
+        # Initialize dictionaries and arrays
+        zero_values = dict()
         default_values = dict()
+        useless = np.zeros(len(feature_names), dtype=bool)
+        better_elsewhere = np.zeros(len(feature_names), dtype=bool)
+        bad_format_no_better = np.zeros(len(feature_names), dtype=bool)
+        
+        # Parse the file row by row
         for i, row in enumerate(reader):
             # First column is feature name
             feature_name = row[0]
@@ -69,15 +87,43 @@ def load_csv_data(data_path, sub_sample=False):
             # Check that feature_name matches the i-th feature of the dataset
             if feature_name != feature_names[i]:
                 raise ValueError(f"Feature n°{i} mismatch in default_values.csv: {feature_name} != {feature_names[i]}")
+            
+            # Second column is the value representing zero
+            try:
+                zero_values[feature_name] = int(row[1])
+            except ValueError:
+                zero_values[feature_name] = None  # no zero value
+            
+            # Third column indicates if the feature is a combination of other indicators
+            try:
+                if int(row[2]) == 1: # in CSV, True is represented as 1
+                    useless[i] = True
+            except ValueError:
+                useless[i] = False
 
+            # Fourth column indicates if the feature has a better format elsewhere
+            try:
+                if int(row[3]) == 1:
+                    better_elsewhere[i] = True
+            except ValueError:
+                better_elsewhere[i] = False
+
+            # Fifth column indicates if the feature is in bad format with no better alternative
+            try:
+                if int(row[4]) == 1:
+                    bad_format_no_better[i] = True
+            except ValueError:
+                bad_format_no_better[i] = False
+
+            # Remaining columns are default values for no response
             default_values[feature_name] = []
-            for val in row[1:]:
+            for val in row[5:]:
                 try:
                     default_values[feature_name].append(float(val))
                 except ValueError:
                     pass  # skip non-numeric default values
 
-    return x_train, x_test, y_train, train_ids, test_ids, feature_names, default_values
+    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, better_elsewhere, bad_format_no_better
 
 
 def create_csv_submission(ids, y_pred, name):
