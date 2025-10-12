@@ -287,3 +287,34 @@ def pca_reduce(x_train, x_test=None, variance_threshold=0.95):
         return x_train_pca, x_test_pca, eigvecs[:, :k], explained_variance[:k]
 
     return x_train_pca, eigvecs[:, :k], explained_variance[:k]
+
+def train_val_split(x_train, y_train, val_ratio):
+    """
+    Splits the training data into training and validation sets.
+
+    Args:
+        x_train (np.array): shape=(N,D) training feature matrix
+        y_train (np.array): shape=(N,) training labels
+        val_ration (float): fraction of data to use for validation
+
+    Returns:
+        x_train_split (np.array): training feature matrix after split
+        y_train_split (np.array): training labels after split
+        x_val (np.array): validation feature matrix
+        y_val (np.array): validation labels
+    """
+    # Shuffle indices
+    indices = np.arange(x_train.shape[0])
+    np.random.shuffle(indices)
+
+    # Determine split index
+    split_idx = int(x_train.shape[0] * (1 - val_ratio))
+
+    # Split data
+    x_train_split = x_train[indices[:split_idx]]
+    y_train_split = y_train[indices[:split_idx]]
+    x_val = x_train[indices[split_idx:]]
+    y_val = y_train[indices[split_idx:]]
+
+    return x_train_split, y_train_split, x_val, y_val
+    
