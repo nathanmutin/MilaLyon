@@ -15,12 +15,12 @@ def normalize(x, x_test=None):
     std_x = np.nanstd(x, axis=0)
     std_x[std_x == 0] = 1.0  # avoid division by zero    
     
-    x = (x - mean_x) / std_x
+    x_norm = (x - mean_x) / std_x
     
     if x_test is not None:
-        x_test = (x_test - mean_x) / std_x
-        return x, x_test
-    return x
+        x_test_norm = (x_test - mean_x) / std_x
+        return x_norm, x_test_norm
+    return x_norm
 
 def min_max_normalize(x, x_test=None):
     """Min-max normalizes the data set to the range [0, 1].
@@ -85,6 +85,28 @@ def replace_default_with_nan(x_train, x_test, feature_names, default_values):
         for default_value in default_values[feature]:
             x_train[x_train[:, i] == default_value, i] = np.nan
             x_test[x_test[:, i] == default_value, i] = np.nan
+
+def replace_by_zero(x_train, x_test, zero_values):
+    """
+    Replaces specified values in the dataset with zero.
+
+    Args:
+        x_train (np.array): shape = (N, D) training feature matrix
+        x_test (np.array): shape = (M, D) test feature matrix
+        zero_values (dict): dictionary of values representing zero for each feature (can be NaN)
+
+    Returns:
+        None: The function modifies x_train and x_test in place.
+    """
+    for i, feature in enumerate(zero_values):
+        zero_value = zero_values[feature]
+        
+        x_train[x_train[:, i] == zero_value, i] = 0
+        x_test[x_test[:, i] == zero_value, i] = 0
+        
+        if zero_value != None and np.isnan(zero_value):
+            x_train[np.isnan(x_train[:, i]), i] = 0
+            x_test[np.isnan(x_test[:, i]), i] = 0
 
 def drop_too_many_missing(x_train, x_test, train_columns, threshold=0.3):
     """
@@ -244,14 +266,14 @@ def clip_outliers(x_train, x_test=None, n_std=3):
 
     return x_train_clipped, n_clipped
 
-def pca_reduce(x_train, x_test=None, variance_threshold=0.95):
+def pca_reduce(x_train, x_test=None, variance_threshold=None):
     """
     Perform PCA and reduce dimensionality to preserve given variance.
 
     Args:
         x_train (np.array): training data, shape (N, D)
         x_test (np.array, optional): test data, shape (M, D)
-        variance_threshold (float): fraction of variance to keep (e.g. 0.95)
+        variance_threshold (float, optional): fraction of variance to keep, if None, keeps all components
 
     Returns:
         x_train_pca (np.array)
@@ -276,8 +298,10 @@ def pca_reduce(x_train, x_test=None, variance_threshold=0.95):
     cumulative_variance = np.cumsum(explained_variance)
 
     # Determine number of components
-    k = np.searchsorted(cumulative_variance, variance_threshold) + 1
-    print(f"Keeping {k} components explaining {cumulative_variance[k-1]*100:.2f}% variance")
+    k = x_train.shape[1]  # default: keep all
+    if variance_threshold is not None:
+        k = np.searchsorted(cumulative_variance, variance_threshold) + 1
+        print(f"Keeping {k} components explaining {cumulative_variance[k-1]*100:.2f}% variance")
 
     # Project data
     x_train_pca = np.dot(x_train, eigvecs[:, :k])
