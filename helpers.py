@@ -22,6 +22,7 @@ def load_csv_data(data_path, max_rows = None):
         zero_values (dict): dictionary of values representing zero for each feature
         default_values (dict of lists): dictionary of default values for each feature
         useless (np.array): boolean array indicating if a feature is useless because is only a simple combination of other features
+        health_related (np.array): boolean array indicating if a feature is health related
         better_elsewhere (np.array): boolean array indicating if a feature has a better format elsewhere
         bad_format_no_better (np.array): boolean array indicating if a feature is in bad format with no better alternative
     """
@@ -63,6 +64,7 @@ def load_csv_data(data_path, max_rows = None):
     # - Feature
     # - Value for zero
     # - Combination of other indicators
+    # - Health related feature
     # - Bad format, better format elsewhere
     # - Bad format, no better
     # - Value for no response 1
@@ -76,6 +78,7 @@ def load_csv_data(data_path, max_rows = None):
         zero_values = dict()
         default_values = dict()
         useless = np.zeros(len(feature_names), dtype=bool)
+        health_related = np.zeros(len(feature_names), dtype=bool)
         better_elsewhere = np.zeros(len(feature_names), dtype=bool)
         bad_format_no_better = np.zeros(len(feature_names), dtype=bool)
         
@@ -101,29 +104,36 @@ def load_csv_data(data_path, max_rows = None):
             except ValueError:
                 useless[i] = False
 
-            # Fourth column indicates if the feature has a better format elsewhere
+            # Fourth column indicates if the feature is health related
             try:
                 if int(row[3]) == 1:
+                    health_related[i] = True
+            except ValueError:
+                health_related[i] = False
+
+            # Fifth column indicates if the feature has a better format elsewhere
+            try:
+                if int(row[4]) == 1:
                     better_elsewhere[i] = True
             except ValueError:
                 better_elsewhere[i] = False
 
-            # Fifth column indicates if the feature is in bad format with no better alternative
+            # Sixth column indicates if the feature is in bad format with no better alternative
             try:
-                if int(row[4]) == 1:
+                if int(row[5]) == 1:
                     bad_format_no_better[i] = True
             except ValueError:
                 bad_format_no_better[i] = False
 
             # Remaining columns are default values for no response
             default_values[feature_name] = []
-            for val in row[5:]:
+            for val in row[6:]:
                 try:
                     default_values[feature_name].append(float(val))
                 except ValueError:
                     pass  # skip non-numeric default values
 
-    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, better_elsewhere, bad_format_no_better
+    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, health_related, better_elsewhere, bad_format_no_better
 
 
 def create_csv_submission(ids, y_pred, name):
