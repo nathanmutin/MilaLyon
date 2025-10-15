@@ -127,7 +127,7 @@ def load_csv_data(data_path, max_rows = None):
 
             # Remaining columns are default values for no response
             default_values[feature_name] = []
-            for val in row[6:]:
+            for val in row[6:9]:
                 try:
                     default_values[feature_name].append(float(val))
                 except ValueError:
