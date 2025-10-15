@@ -86,7 +86,7 @@ def replace_default_with_nan(x_train, x_test, feature_names, default_values):
             x_train[x_train[:, i] == default_value, i] = np.nan
             x_test[x_test[:, i] == default_value, i] = np.nan
 
-def drop_too_many_missing(x_train, x_test, train_columns, threshold=0.3):
+def drop_too_many_missing(x_train, x_test, train_columns, threshold=0.2):
     """
     Drops features (columns) with more than a given percentage of missing values (NaNs).
 
