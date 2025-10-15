@@ -3,14 +3,14 @@ import numpy as np
 import os
 
 
-def load_csv_data(data_path, sub_sample=False):
+def load_csv_data(data_path, max_rows = None):
     """
     This function loads the data and returns the respectinve numpy arrays.
     Remember to put the 3 files in the same folder and to not change the names of the files.
 
     Args:
         data_path (str): datafolder path
-        sub_sample (bool, optional): If True the data will be subsempled. Default to False.
+        max_rows (int, optional): If specified, limits the number of rows loaded from each file.
 
     Returns:
         x_train (np.array): training data
@@ -18,10 +18,14 @@ def load_csv_data(data_path, sub_sample=False):
         y_train (np.array): labels for training data in format (-1,1)
         train_ids (np.array): ids of training data
         test_ids (np.array): ids of test data
+        feature_names (np.array): list of feature names for training data
+        zero_values (dict): dictionary of values representing zero for each feature
+        default_values (dict of lists): dictionary of default values for each feature
+        useless (np.array): boolean array indicating if a feature is useless because is only a simple combination of other features
+        health_related (np.array): boolean array indicating if a feature is health related
+        better_elsewhere (np.array): boolean array indicating if a feature has a better format elsewhere
+        bad_format_no_better (np.array): boolean array indicating if a feature is in bad format with no better alternative
     """
-    max_rows = None
-    if sub_sample:
-        max_rows = 500
     
     y_train = np.genfromtxt(
         os.path.join(data_path, "y_train.csv"),
@@ -49,14 +53,88 @@ def load_csv_data(data_path, sub_sample=False):
     x_train = x_train[:, 1:]
     x_test = x_test[:, 1:]
     
-      # --- Get column names from headers ---
+    # --- Get column names from headers ---
     with open(os.path.join(data_path, "x_train.csv"), "r") as f:
-        train_columns = f.readline().strip().split(",")[1:]  # skip "Id"
+        feature_names = f.readline().strip().split(",")[1:]  # skip "Id"
+    feature_names = np.array(feature_names)
+    
+    # The file "default_values.csv" contains default values for each feature
+    # First line is header
+    # Columns are:
+    # - Feature
+    # - Value for zero
+    # - Combination of other indicators
+    # - Health related feature
+    # - Bad format, better format elsewhere
+    # - Bad format, no better
+    # - Value for no response 1
+    # - Value for no response 2
+    # - ...
+    with open(os.path.join(data_path, "default_values.csv"), "r") as f:
+        reader = csv.reader(f, delimiter=",")
+        next(reader) # Skip header
+        
+        # Initialize dictionaries and arrays
+        zero_values = dict()
+        default_values = dict()
+        useless = np.zeros(len(feature_names), dtype=bool)
+        health_related = np.zeros(len(feature_names), dtype=bool)
+        better_elsewhere = np.zeros(len(feature_names), dtype=bool)
+        bad_format_no_better = np.zeros(len(feature_names), dtype=bool)
+        
+        # Parse the file row by row
+        for i, row in enumerate(reader):
+            # First column is feature name
+            feature_name = row[0]
+            
+            # Check that feature_name matches the i-th feature of the dataset
+            if feature_name != feature_names[i]:
+                raise ValueError(f"Feature n°{i} mismatch in default_values.csv: {feature_name} != {feature_names[i]}")
+            
+            # Second column is the value representing zero
+            try:
+                zero_values[feature_name] = int(row[1])
+            except ValueError:
+                zero_values[feature_name] = None  # no zero value
+            
+            # Third column indicates if the feature is a combination of other indicators
+            try:
+                if int(row[2]) == 1: # in CSV, True is represented as 1
+                    useless[i] = True
+            except ValueError:
+                useless[i] = False
 
-    with open(os.path.join(data_path, "x_test.csv"), "r") as f:
-        test_columns = f.readline().strip().split(",")[1:]  # skip "Id"
+            # Fourth column indicates if the feature is health related
+            try:
+                if int(row[3]) == 1:
+                    health_related[i] = True
+            except ValueError:
+                health_related[i] = False
 
-    return x_train, x_test, y_train, train_ids, test_ids, train_columns, test_columns
+            # Fifth column indicates if the feature has a better format elsewhere
+            try:
+                if int(row[4]) == 1:
+                    better_elsewhere[i] = True
+            except ValueError:
+                better_elsewhere[i] = False
+
+            # Sixth column indicates if the feature is in bad format with no better alternative
+            try:
+                if int(row[5]) == 1:
+                    bad_format_no_better[i] = True
+            except ValueError:
+                bad_format_no_better[i] = False
+
+            # Remaining columns are default values for no response
+            default_values[feature_name] = []
+            for val in row[6:]:
+                try:
+                    default_values[feature_name].append(float(val))
+                except ValueError:
+                    pass  # skip non-numeric default values
+
+    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, health_related, better_elsewhere, bad_format_no_better
+
 
 def create_csv_submission(ids, y_pred, name):
     """
@@ -79,107 +157,3 @@ def create_csv_submission(ids, y_pred, name):
         writer.writeheader()
         for r1, r2 in zip(ids, y_pred):
             writer.writerow({"Id": int(r1), "Prediction": int(r2)})
-
-
-def replace_missing(X, default_missing, exceptions):
-    X_clean = X.astype(float)  # allow np.nan
-    for feature_group, codes in exceptions.items():
-        for col in feature_group:
-            mask = np.isin(X_clean[:, col], codes)
-            X_clean[mask, col] = np.nan
-
-    all_excepted_cols = [col for group in exceptions.keys() for col in group]
-    for col in range(X_clean.shape[1]):
-        if col not in all_excepted_cols:
-            mask = np.isin(X_clean[:, col], default_missing)
-            X_clean[mask, col] = np.nan
-
-    return X_clean
-
-def drop_too_many_missing(x_train, x_test, train_columns, threshold=0.3):
-    """
-    Drops features (columns) with more than a given percentage of missing values (NaNs).
-
-    Args:
-        x_train (np.array): shape = (N, D) training feature matrix
-        x_test (np.array): shape = (M, D) test feature matrix
-        train_columns (list or np.array): feature names corresponding to columns
-        threshold (float): fraction of allowed missing values before dropping (default 0.3)
-
-    Returns:
-        tuple:
-            x_train_reduced (np.array): training data with dropped columns
-            x_test_reduced (np.array): test data with dropped columns
-            cols_to_keep (np.array): boolean mask of kept columns
-    """
-    nan_ratio = np.isnan(x_train).sum(axis=0) / x_train.shape[0]
-    cols_to_keep = nan_ratio <= threshold
-
-    # Identify dropped features
-    dropped_cols = np.where(~cols_to_keep)[0]
-    dropped_names = [train_columns[i] for i in dropped_cols]
-
-    print(f"Dropped {len(dropped_cols)} features ({np.mean(~cols_to_keep)*100:.1f}%)")
-    if len(dropped_names) > 0:
-        print("Dropped feature names:", dropped_names)
-
-    # Reduce both train and test sets
-    x_train_reduced = x_train[:, cols_to_keep]
-    x_test_reduced = x_test[:, cols_to_keep]
-
-    return x_train_reduced, x_test_reduced, cols_to_keep
-
-import numpy as np
-
-def drop_highly_correlated(x_train, x_test, feature_names, threshold=0.9):
-    """
-    Drops one feature from each highly correlated pair based on the number of NaNs.
-    The feature with more NaNs is dropped.
-
-    Args:
-        x_train (np.array): shape = (N, D) training feature matrix
-        x_test (np.array): shape = (M, D) test feature matrix
-        feature_names (list or np.array): feature names corresponding to columns
-        threshold (float): correlation threshold to consider a pair highly correlated
-
-    Returns:
-        tuple:
-            x_train_reduced (np.array): training data with correlated features removed
-            x_test_reduced (np.array): test data with correlated features removed
-            kept_cols (np.array): boolean mask of kept columns
-            dropped_names (list): names of the dropped features
-    """
-    # Compute correlation matrix
-    corr = np.corrcoef(x_train, rowvar=False)
-
-    # Count NaNs per feature
-    nan_counts = np.isnan(x_train).sum(axis=0)
-
-    # Track columns to drop
-    drop_cols = set()
-    D = corr.shape[0]
-
-    for i in range(D):
-        for j in range(i + 1, D):
-            if abs(corr[i, j]) > threshold:
-                # Drop the feature with more NaNs; if equal, drop j
-                if nan_counts[i] > nan_counts[j]:
-                    drop_cols.add(i)
-                else:
-                    drop_cols.add(j)
-
-    # Build mask of columns to keep
-    kept_cols = np.array([i not in drop_cols for i in range(D)])
-
-    # Reduce train and test sets
-    x_train_reduced = x_train[:, kept_cols]
-    x_test_reduced = x_test[:, kept_cols]
-
-    # Get dropped feature names
-    dropped_names = [feature_names[i] for i in range(D) if i in drop_cols]
-
-    print(f"Dropped {len(dropped_names)} highly correlated features:")
-    print(dropped_names)
-
-    return x_train_reduced, x_test_reduced, kept_cols, dropped_names
-
