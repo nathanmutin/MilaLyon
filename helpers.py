@@ -93,7 +93,7 @@ def load_csv_data(data_path, max_rows = None):
             
             # Second column is the value representing zero
             try:
-                zero_values[feature_name] = int(row[1])
+                zero_values[feature_name] = float(row[1])
             except ValueError:
                 zero_values[feature_name] = None  # no zero value
             
