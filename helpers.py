@@ -67,6 +67,8 @@ def load_csv_data(data_path, max_rows = None):
     # - Health related feature
     # - Bad format, better format elsewhere
     # - Bad format, no better
+    # - Binary
+    # - One-hot
     # - Value for no response 1
     # - Value for no response 2
     # - ...
@@ -81,6 +83,8 @@ def load_csv_data(data_path, max_rows = None):
         health_related = np.zeros(len(feature_names), dtype=bool)
         better_elsewhere = np.zeros(len(feature_names), dtype=bool)
         bad_format_no_better = np.zeros(len(feature_names), dtype=bool)
+        binary = np.zeros(len(feature_names), dtype=bool)  # not used here
+        one_hot = np.zeros(len(feature_names), dtype=bool)  # not used here
         
         # Parse the file row by row
         for i, row in enumerate(reader):
@@ -124,10 +128,24 @@ def load_csv_data(data_path, max_rows = None):
                     bad_format_no_better[i] = True
             except ValueError:
                 bad_format_no_better[i] = False
+            
+            # Seventh column indicates if the feature is binary (not used here)
+            try:
+                if int(row[6]) == 1:
+                    binary[i] = True
+            except ValueError:
+                binary[i] = False
+            
+            # Eighth column indicates if the feature is one-hot encoded (not used here)
+            try:
+                if int(row[7]) == 1:
+                    one_hot[i] = True
+            except ValueError:
+                one_hot[i] = False
 
             # Remaining columns are default values for no response
             default_values[feature_name] = []
-            for val in row[6:9]:
+            for val in row[8:]:
                 try:
                     default_values[feature_name].append(float(val))
                 except ValueError:
