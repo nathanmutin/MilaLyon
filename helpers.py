@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 
-def load_csv_data(data_path, max_rows = None):
+def load_csv_data(data_path, max_rows = None, dictionnary=False):
     """
     This function loads the data and returns the respectinve numpy arrays.
     Remember to put the 3 files in the same folder and to not change the names of the files.
@@ -25,6 +25,8 @@ def load_csv_data(data_path, max_rows = None):
         health_related (np.array): boolean array indicating if a feature is health related
         better_elsewhere (np.array): boolean array indicating if a feature has a better format elsewhere
         bad_format_no_better (np.array): boolean array indicating if a feature is in bad format with no better alternative
+        binary (np.array): boolean array indicating if a feature is binary
+        one_hot (np.array): boolean array indicating if a feature is one-hot encoded
     """
     
     y_train = np.genfromtxt(
@@ -150,8 +152,23 @@ def load_csv_data(data_path, max_rows = None):
                     default_values[feature_name].append(float(val))
                 except ValueError:
                     pass  # skip non-numeric default values
-
-    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, health_related, better_elsewhere, bad_format_no_better
+    if dictionnary:
+        return {
+            'x_train': x_train,
+            'x_test': x_test,
+            'y_train': y_train,
+            'train_ids': train_ids,
+            'test_ids': test_ids,
+            'feature_names': feature_names,
+            'useless': useless,
+            'health_related': health_related,
+            'better_elsewhere': better_elsewhere,
+            'bad_format_no_better': bad_format_no_better,
+            'binary': binary,
+            'one_hot': one_hot
+        }, zero_values, default_values
+        
+    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, health_related, better_elsewhere, bad_format_no_better, binary, one_hot
 
 
 def create_csv_submission(ids, y_pred, name):

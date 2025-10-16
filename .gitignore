@@ -109,3 +109,8 @@ ENV/
 *.cb2
 *.fdb_latexmk
 *.synctex.gz
+
+data/x_train.csv
+data/x_test.csv
+data/y_train.csv
+data/dataset.zip
