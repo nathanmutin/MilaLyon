@@ -185,7 +185,6 @@ def identify_low_correlation(x_train, y_train, feature_names, threshold=0.1):
     
     return low_corr_names, correlations
 
-
 def replace_nan(x_train, x_test):
     for i in range(x_train.shape[1]):
         # Get non-nan values
