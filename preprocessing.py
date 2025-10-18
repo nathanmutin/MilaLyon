@@ -108,6 +108,36 @@ def replace_by_zero(x_train, x_test, zero_values):
             x_train[np.isnan(x_train[:, i]), i] = 0
             x_test[np.isnan(x_test[:,i]),i]=0
 
+def split_train_val(x_train, y_train, val_size=0.1, random_seed=42):
+    """
+    Splits the training data into training and validation sets.
+
+    Args:
+        x_train (np.array): shape = (N, D) training feature matrix
+        y_train (np.array): shape = (N,) target values
+        val_size (float): fraction of data to use for validation
+        random_seed (int): random seed for reproducibility
+    Returns:
+        x_train_new (np.array): shape = (N*(1-val_size), D) new training feature matrix
+        y_train_new (np.array): shape = (N*(1-val_size),) new training target values
+        x_val (np.array): shape = (N*val_size, D) validation feature matrix
+        y_val (np.array): shape = (N*val_size,) validation target values
+    """
+    np.random.seed(random_seed)
+    N = x_train.shape[0]
+    indices = np.random.permutation(N)
+    val_size_int = int(N * val_size)
+
+    val_indices = indices[:val_size_int]
+    train_indices = indices[val_size_int:]
+
+    x_val = x_train[val_indices]
+    y_val = y_train[val_indices]
+    x_train_new = x_train[train_indices]
+    y_train_new = y_train[train_indices]
+
+    return x_train_new, y_train_new, x_val, y_val
+
 def drop_too_many_missing(x_train, x_test, train_columns, threshold=0.2):
     """
     Drops features (columns) with more than a given percentage of missing values (NaNs).
