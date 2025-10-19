@@ -67,6 +67,45 @@ def mean_imputation(x_train, x_test):
     # Impute test set using train means
     inds_test = np.where(np.isnan(x_test))
     x_test[inds_test] = mean_x[inds_test[1]]
+    
+    return x_train, x_test
+
+def mode_imputation(x_train, x_test):
+    """
+    Impute missing values with the mode (most frequent value) of each feature using only NumPy.
+    Drops columns that are entirely NaN.
+
+    Args:
+        x_train (np.array): shape=(N,D)
+        x_test (np.array): shape=(M,D)
+
+    Returns:
+        x_train_imputed, x_test_imputed
+    """
+    x_train_imputed = x_train.copy()
+    x_test_imputed = x_test.copy()
+
+    D = x_train.shape[1]
+    mode_x = np.full(D, np.nan)
+
+    for i in range(D):
+        col = x_train[:, i]
+        valid = col[~np.isnan(col)]
+        if valid.size > 0:
+            # Compute mode manually
+            vals, counts = np.unique(valid, return_counts=True)
+            mode_x[i] = vals[np.argmax(counts)]
+
+    # Impute train
+    inds_train = np.where(np.isnan(x_train_imputed))
+    x_train_imputed[inds_train] = mode_x[inds_train[1]]
+
+    # Impute test using train mode
+    inds_test = np.where(np.isnan(x_test_imputed))
+    x_test_imputed[inds_test] = mode_x[inds_test[1]]
+
+    return x_train_imputed, x_test_imputed
+
 
 def replace_default_with_nan(x_train, x_test, feature_names, default_values):
     """
