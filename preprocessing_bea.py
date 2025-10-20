@@ -652,3 +652,83 @@ def preprocess_data(data_folder, missing_threshold=0.2, health_selection = True,
     
     return x_train, x_test, y_train, feature_names
     
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def logistic_regression_train(x_train, y_train, lr=0.01, epochs=1000, lambda_=0.0):
+    """Train logistic regression using gradient descent."""
+    N, D = x_train.shape
+    w = np.zeros(D)
+    b = 0.0
+
+    for _ in range(epochs):
+        z = np.dot(x_train, w) + b
+        y_pred = sigmoid(z)
+
+        # Gradient of loss with L2 regularization
+        dw = (1/N) * np.dot(x_train.T, (y_pred - y_train)) + lambda_ * w
+        db = (1/N) * np.sum(y_pred - y_train)
+
+        w -= lr * dw
+        b -= lr * db
+
+    return w, b
+
+
+def logistic_regression_predict(x, w, b, threshold=0.5):
+    """Predict binary class labels."""
+    probs = sigmoid(np.dot(x, w) + b)
+    return (probs >= threshold).astype(int), probs
+
+
+def evaluate_classification(y_true, y_pred, verbose=False):
+    """Compute accuracy, F1 score, and confusion matrix."""
+    import numpy as np
+
+    tp = np.sum((y_true == 1) & (y_pred == 1))
+    tn = np.sum((y_true == 0) & (y_pred == 0))
+    fp = np.sum((y_true == 0) & (y_pred == 1))
+    fn = np.sum((y_true == 1) & (y_pred == 0))
+
+    accuracy = (tp + tn) / len(y_true)
+    precision = tp / (tp + fp + 1e-8)
+    recall = tp / (tp + fn + 1e-8)
+    f1 = 2 * precision * recall / (precision + recall + 1e-8)
+
+    if verbose:
+        print("Confusion Matrix:")
+        print(f"TP: {tp}, FP: {fp}")
+        print(f"FN: {fn}, TN: {tn}")
+
+    return accuracy, f1, (tp, fp, fn, tn)
+
+
+def split_train_val(x_train, y_train, val_size=0.1, random_seed=42):
+    """
+    Splits the training data into training and validation sets.
+
+    Args:
+        x_train (np.array): shape = (N, D) training feature matrix
+        y_train (np.array): shape = (N,) target values
+        val_size (float): fraction of data to use for validation
+        random_seed (int): random seed for reproducibility
+    Returns:
+        x_train_new (np.array): shape = (N*(1-val_size), D) new training feature matrix
+        y_train_new (np.array): shape = (N*(1-val_size),) new training target values
+        x_val (np.array): shape = (N*val_size, D) validation feature matrix
+        y_val (np.array): shape = (N*val_size,) validation target values
+    """
+    np.random.seed(random_seed)
+    N = x_train.shape[0]
+    indices = np.random.permutation(N)
+    val_size_int = int(N * val_size)
+
+    val_indices = indices[:val_size_int]
+    train_indices = indices[val_size_int:]
+
+    x_val = x_train[val_indices]
+    y_val = y_train[val_indices]
+    x_train_new = x_train[train_indices]
+    y_train_new = y_train[train_indices]
+
+    return x_train_new, y_train_new, x_val, y_val
