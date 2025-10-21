@@ -1,6 +1,7 @@
 import numpy as np  
 import csv
 import os
+from preprocessing import *
 
 def load_csv_data_new(data_path, max_rows = None):
     """
@@ -646,9 +647,10 @@ def preprocess_data(data_folder, missing_threshold=0.2, health_selection = True,
     if apply_mean_mode_imputation:
         x_train, x_test = mean_mode_imputation(x_train, x_test, continuos)
         
-    x_train, x_test = standardize_continuous_features(x_train, x_test, feature_names, continuos)
+    
     x_train, feature_names_cor = remove_highly_correlated(x_train, feature_names, threshold=corr_threshold)
-    x_test, _ = remove_highly_correlated(x_test, feature_names, threshold=corr_threshold)   
+    x_test, _ = remove_highly_correlated(x_test, feature_names, threshold=corr_threshold)  
+    x_train, x_test = min_max_normalize(x_train, x_test) 
     
     return x_train, x_test, y_train, feature_names
     
