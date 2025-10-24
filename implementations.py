@@ -227,3 +227,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         w -= gamma * gradient
 
     return w, logistic_negative_log_likelihood(y, tx, w)
+
+def predict_labels_logistic(tx, w, threshold=0.5):
+    pred = sigmoid(tx @ w)
+    return (pred >= threshold).astype(int)

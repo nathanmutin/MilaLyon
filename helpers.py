@@ -79,8 +79,8 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
         next(reader) # Skip header
         
         # Initialize dictionaries and arrays
-        zero_values = dict()
-        default_values = dict()
+        zero_values = np.zeros(len(feature_names), dtype=object)
+        default_values = np.zeros(len(feature_names), dtype=object)
         useless = np.zeros(len(feature_names), dtype=bool)
         health_related = np.zeros(len(feature_names), dtype=bool)
         better_elsewhere = np.zeros(len(feature_names), dtype=bool)
@@ -99,9 +99,9 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
             
             # Second column is the value representing zero
             try:
-                zero_values[feature_name] = int(row[1])
+                zero_values[i] = int(row[1])
             except ValueError:
-                zero_values[feature_name] = None  # no zero value
+                zero_values[i] = None  # no zero value
             
             # Third column indicates if the feature is a combination of other indicators
             try:
@@ -146,10 +146,10 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
                 one_hot[i] = False
 
             # Remaining columns are default values for no response
-            default_values[feature_name] = []
+            default_values[i] = []
             for val in row[8:]:
                 try:
-                    default_values[feature_name].append(float(val))
+                    default_values[i].append(float(val))
                 except ValueError:
                     pass  # skip non-numeric default values
     if dictionnary:
@@ -165,8 +165,10 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
             'better_elsewhere': better_elsewhere,
             'bad_format_no_better': bad_format_no_better,
             'binary': binary,
-            'one_hot': one_hot
-        }, zero_values, default_values
+            'one_hot': one_hot,
+            'zero_values': zero_values,
+            'default_values': default_values
+        }
         
     return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, health_related, better_elsewhere, bad_format_no_better, binary, one_hot
 

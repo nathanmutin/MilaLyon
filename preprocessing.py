@@ -68,21 +68,20 @@ def mean_imputation(x_train, x_test):
     inds_test = np.where(np.isnan(x_test))
     x_test[inds_test] = mean_x[inds_test[1]]
 
-def replace_default_with_nan(x_train, x_test, feature_names, default_values):
+def replace_default_with_nan(x_train, x_test, default_values):
     """
     Replaces default values in the dataset with NaN.
 
     Args:
         x_train (np.array): shape = (N, D) training feature matrix
         x_test (np.array): shape = (M, D) test feature matrix
-        feature_names (list or np.array): feature names corresponding to columns
         default_values (dict of lists): dictionary of default values for each feature
 
     Returns:
         None: The function modifies x_train and x_test in place.
     """
-    for i, feature in enumerate(feature_names):
-        for default_value in default_values[feature]:
+    for i in range(len(default_values)):
+        for default_value in default_values[i]:
             x_train[x_train[:, i] == default_value, i] = np.nan
             x_test[x_test[:, i] == default_value, i] = np.nan
 
@@ -98,13 +97,11 @@ def replace_by_zero(x_train, x_test, zero_values):
     Returns:
         None: The function modifies x_train and x_test in place.
     """
-    for i, feature in enumerate(zero_values):
-        zero_value = zero_values[feature]
-        
-        x_train[x_train[:, i] == zero_value, i] = 0
-        x_test[x_test[:, i] == zero_value, i] = 0
-        
-        if zero_value != None and np.isnan(zero_value):
+    for i in range(len(zero_values)):
+        x_train[x_train[:, i] == zero_values[i], i] = 0
+        x_test[x_test[:, i] == zero_values[i], i] = 0
+
+        if zero_values[i] != None and np.isnan(zero_values[i]):
             x_train[np.isnan(x_train[:, i]), i] = 0
             x_test[np.isnan(x_test[:,i]),i]=0
 
@@ -424,6 +421,8 @@ def drop_features_from_dictionnary(data_dict, feature_names_to_drop):
             data_dict['bad_format_no_better'] = np.delete(data_dict['bad_format_no_better'], index)
             data_dict['binary'] = np.delete(data_dict['binary'], index)
             data_dict['one_hot'] = np.delete(data_dict['one_hot'], index)
+            data_dict['zero_values'] = np.delete(data_dict['zero_values'], index)
+            data_dict['default_values'] = np.delete(data_dict['default_values'], index)
         else:
             print(f"Feature {feature_name} not found in feature names.")
 
@@ -460,6 +459,8 @@ def one_hot_encode(data_dict):
                 data_dict['bad_format_no_better'] = np.append(data_dict['bad_format_no_better'], data_dict['bad_format_no_better'][idx])
                 data_dict['binary'] = np.append(data_dict['binary'], 1)
                 data_dict['one_hot'] = np.append(data_dict['one_hot'], 1)
+                data_dict['zero_values'] = np.append(data_dict['zero_values'], data_dict['zero_values'][idx])
+                data_dict['default_values'] = np.append(data_dict['default_values'], data_dict['default_values'][idx])
 
             # Drop the original feature
             idx = np.where(data_dict['feature_names'] == feature)[0][0]
@@ -472,3 +473,5 @@ def one_hot_encode(data_dict):
             data_dict['bad_format_no_better'] = np.delete(data_dict['bad_format_no_better'], idx)
             data_dict['binary'] = np.delete(data_dict['binary'], idx)
             data_dict['one_hot'] = np.delete(data_dict['one_hot'], idx)
+            data_dict['zero_values'] = np.delete(data_dict['zero_values'], idx)
+            data_dict['default_values'] = np.delete(data_dict['default_values'], idx)
