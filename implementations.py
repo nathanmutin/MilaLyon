@@ -228,6 +228,52 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
 
     return w, logistic_negative_log_likelihood(y, tx, w)
 
+def weighted_reg_logistic_regression(y, tx, lambda_, sample_weights, initial_w, max_iters, gamma):
+    """Weighted and regularized logistic regression using gradient descent
+       Same as reg_logistic_regression but with the learning rate is scaled by
+       sample weights
+
+    Args:
+        y (np.array): shape=(N,) target values
+        tx (np.array): shape=(N,D) feature matrix
+        lambda_ (float): regularization parameter
+        sample_weights (np.array): shape=(N,) sample weights
+        initial_w (np.array): shape=(D,) initial weights
+        max_iters (int): maximum number of gradient descent iterations
+        gamma (float): learning rate
+
+    Returns:
+        w (np.array): shape=(D,) final weights
+        loss (float): final loss value
+    """
+    # Minimize the regularized negative log likelihood
+    w = initial_w
+    for _ in range(max_iters):
+        # gradient descent step
+        pred = sigmoid(tx @ w)  # sigmoid function
+        gradient = tx.T @ (sample_weights * (pred - y)) / len(y) + 2 * lambda_ * w  # gradient of the regularized loss
+        w -= gamma * gradient
+
+    return w, logistic_negative_log_likelihood(y, tx, w)
+
 def predict_labels_logistic(tx, w, threshold=0.5):
     pred = sigmoid(tx @ w)
     return (pred >= threshold).astype(int)
+
+def compute_scores(y_true, y_pred):
+    tp = np.sum((y_true == 1) & (y_pred == 1))
+    tn = np.sum((y_true == 0) & (y_pred == 0))
+    fp = np.sum((y_true == 0) & (y_pred == 1))
+    fn = np.sum((y_true == 1) & (y_pred == 0))
+
+    accuracy = (tp + tn) / (tp + tn + fp + fn)
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+
+    return {
+        'accuracy': accuracy,
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1_score
+    }

@@ -105,6 +105,43 @@ def replace_by_zero(x_train, x_test, zero_values):
             x_train[np.isnan(x_train[:, i]), i] = 0
             x_test[np.isnan(x_test[:,i]),i]=0
 
+def convert_to_times_per_week(x, feature_flags):
+    """
+    Converts bad-format features to 'times per week'.
+    Assumes the feature has been flagged with 1 in feature_flags.
+
+    Args:
+        x (np.array): shape (N, D) feature matrix
+        feature_flags (np.array): shape (D,), 1 if feature needs conversion
+
+    Returns:
+        None: The function modifies x in place.
+    """
+    for i, flag in enumerate(feature_flags):
+        if flag == 1:
+            col = x[:, i].astype(float)
+            
+            # Example conversion:
+            # If values are coded like:
+            # 101-199 → times per week (divide by 1 if already weekly)
+            # 201-299 → times per month → divide by 4.33 to get per week
+            # 888 → Never → map to 0
+            # 777 → Don't know → leave as np.nan
+            # 999 → Refused → leave as np.nan
+
+            # Replace "Never" and "Don't know / Refused" with NaN
+            col[col == 888] = 0      # Never = 0 times/week
+            col[col == 777] = np.nan
+            col[col == 999] = np.nan
+
+            # Convert month codes (example)
+            col[(col >= 201) & (col <= 299)] /= 4.33  # approximate month→week
+
+            # Update column
+            x[:, i] = col
+
+    return x
+
 def split_train_val(x_train, y_train, val_size=0.1, random_seed=42):
     """
     Splits the training data into training and validation sets.
