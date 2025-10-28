@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def mae(y, tx, w):
     """Compute the Mean Absolute Error (MAE)
@@ -194,13 +195,17 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """
     # Minimize the negative log likelihood
     w = initial_w
+    losses = []
+    weights = []
     for _ in range(max_iters):
         # gradient descent step
         pred = sigmoid(tx @ w)  # sigmoid function
         gradient = tx.T @ (pred - y) / len(y)  # gradient of the loss
         w -= gamma * gradient
+        weights.append(w)
+        losses.append(logistic_negative_log_likelihood(y, tx, w))
 
-    return w, logistic_negative_log_likelihood(y, tx, w)
+    return w, losses, weights
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Regularized logistic regression using gradient descent
@@ -220,13 +225,18 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """
     # Minimize the regularized negative log likelihood
     w = initial_w
+    weights = []
+    losses = []
     for _ in range(max_iters):
         # gradient descent step
         pred = sigmoid(tx @ w)  # sigmoid function
         gradient = tx.T @ (pred - y) / len(y) + 2 * lambda_ * w  # gradient of the regularized loss
         w -= gamma * gradient
+        weights.append(w)
+        losses.append(logistic_negative_log_likelihood(y, tx, w) + lambda_ * np.sum(w ** 2))
+        
 
-    return w, logistic_negative_log_likelihood(y, tx, w)
+    return w, losses, weights
 
 def weighted_reg_logistic_regression(y, tx, lambda_, sample_weights, initial_w, max_iters, gamma):
     """Weighted and regularized logistic regression using gradient descent
@@ -277,3 +287,215 @@ def compute_scores(y_true, y_pred):
         'recall': recall,
         'f1_score': f1_score
     }
+    
+def best_threshold(y_true, tx, w, thresholds=np.linspace(0.1, 0.9, 50)):
+    """Find threshold maximizing F1-score."""
+    best_t, best_f1 = 0.5, 0
+    for t in thresholds:
+        y_pred = predict_labels_logistic(tx,w,t)
+        scores = compute_scores(y_true, y_pred)
+        f1 = scores['f1_score']
+        if f1 > best_f1:
+            best_f1, best_t = f1, t
+    return best_t, best_f1
+    
+def k_fold_indices(y, k, seed=42):
+    """Generate indices for k-fold cross-validation."""
+    np.random.seed(seed)
+    N = len(y)
+    indices = np.random.permutation(N)
+    fold_sizes = np.full(k, N // k, dtype=int)
+    fold_sizes[:N % k] += 1
+    current = 0
+    folds = []
+    for fold_size in fold_sizes:
+        start, stop = current, current + fold_size
+        folds.append(indices[start:stop])
+        current = stop
+    return folds
+
+def cross_validate_gammas(x, y, gammas, k=5, max_iters=1000, threshold=0.5):
+    """Perform k-fold CV to select the best gamma using F1 score."""
+    folds = k_fold_indices(y, k)
+    results = {}
+
+    for gamma in gammas:
+        f1_scores = []
+        thresholds = []
+        for i in range(k):
+            val_idx = folds[i]
+            train_idx = np.hstack([folds[j] for j in range(k) if j != i])
+            x_tr, y_tr = x[train_idx], y[train_idx]
+            x_val, y_val = x[val_idx], y[val_idx]
+
+            initial_w = np.zeros(x.shape[1])
+            w, _ = logistic_regression(y_tr, x_tr, initial_w, max_iters, gamma)
+           
+            best_t, best_f1 = best_threshold(y_val, x_val, w)
+            y_pred = predict_labels_logistic(x_val, w, best_t)
+            f1_scores.append(best_f1)
+            thresholds.append(best_t)
+
+        results[gamma] = np.mean(f1_scores)
+        print(f"Gamma={gamma:.5f} | Mean F1={np.mean(f1_scores):.4f}")
+
+    best_gamma = max(results, key=results.get)
+    print(f"\n✅ Best gamma: {best_gamma:.5f} (F1={results[best_gamma]:.4f})")
+    return best_gamma, results
+
+def plot_training_validation_performance(x_train, y_train, x_val, y_val, initial_w, max_iters, gamma):
+    """
+    Trains logistic regression, evaluates F1 and accuracy across thresholds,
+    and plots both threshold and loss curves for training and validation.
+
+    Args:
+        x_train (np.array): training features
+        y_train (np.array): training labels (0/1)
+        x_val (np.array): validation features
+        y_val (np.array): validation labels (0/1)
+        initial_w (np.array): initial weight vector
+        max_iters (int): number of iterations
+        gamma (float): learning rate
+    """
+    # ---- Train model ----
+    w, losses_train, weights = logistic_regression(y_train, x_train, initial_w, max_iters, gamma)
+    
+    # ---- Threshold sweep ----
+    thresholds = np.arange(0.0, 1.0 + 0.01, 0.01)
+    f1_train, acc_train = [], []
+    f1_val, acc_val = [], []
+
+    for t in thresholds:
+        y_pred_train = predict_labels_logistic(x_train, w, t)
+        y_pred_val = predict_labels_logistic(x_val, w, t)
+
+        scores_train = compute_scores(y_train, y_pred_train)
+        scores_val = compute_scores(y_val, y_pred_val)
+
+        f1_train.append(scores_train['f1_score'])
+        acc_train.append(scores_train['accuracy'])
+        f1_val.append(scores_val['f1_score'])
+        acc_val.append(scores_val['accuracy'])
+
+    # ---- Best threshold ----
+    best_idx = np.argmax(f1_val)
+    best_threshold = thresholds[best_idx]
+    print(f"✅ Best threshold: {best_threshold:.2f} | F1_val = {f1_val[best_idx]:.3f} | Acc_val = {acc_val[best_idx]:.3f}")
+
+    # ---- Plot F1 & Accuracy vs Threshold ----
+    plt.figure(figsize=(8,5))
+    plt.plot(thresholds, acc_train, label='Train Accuracy',  marker='o',  markersize=3, color='blue')
+    plt.plot(thresholds, acc_val, label='Val Accuracy',  marker='x', markersize=3, color='green')
+    plt.plot(thresholds, f1_train, label='Train F1', marker='o',markersize = 3, color='orange')
+    plt.plot(thresholds, f1_val, label='Val F1',  marker='x', markersize=3, color='red')
+    plt.axvline(best_threshold, color='red', linestyle=':', label=f'Best Threshold ({best_threshold:.2f})')
+    plt.xlabel('Threshold')
+    plt.ylabel('Score')
+    plt.title('F1 & Accuracy vs Threshold (Train & Validation)')
+    plt.legend()
+    plt.grid(alpha=0.5)
+    plt.show()
+    
+    # ---- Plot F1 & Loss vs Iterations ----
+    f1_scores = []
+    for i in weights:
+        y_train_pred = predict_labels_logistic(x_train, i, best_threshold)
+        scores = compute_scores(y_train, y_train_pred)
+        f1_scores.append(scores['f1_score'])
+    
+    print(f1_scores)        
+    fig, ax1 = plt.subplots(figsize=(7, 5))
+
+    ax1.plot(losses_train, color='tab:red', label='Loss')
+    ax1.set_xlabel('Iteration')
+    ax1.set_ylabel('Loss', color='tab:red')
+    ax1.tick_params(axis='y', labelcolor='tab:red')
+
+    ax2 = ax1.twinx()
+    ax2.plot(f1_scores, color='tab:blue', label='F1 Score')
+    ax2.set_ylabel('F1 Score', color='tab:blue')
+    ax2.tick_params(axis='y', labelcolor='tab:blue')
+    plt.title('Training Loss and F1 Score over Iterations')
+
+    plt.tight_layout()
+    plt.show()
+
+    return w, best_threshold, f1_val[best_idx], acc_val[best_idx], losses_train, f1_scores, weights
+
+def plot_training_validation_performance_reg(x_train, y_train, x_val, y_val,lambda_, initial_w, max_iters, gamma):
+    """
+    Trains logistic regression, evaluates F1 and accuracy across thresholds,
+    and plots both threshold and loss curves for training and validation.
+
+    Args:
+        x_train (np.array): training features
+        y_train (np.array): training labels (0/1)
+        x_val (np.array): validation features
+        y_val (np.array): validation labels (0/1)
+        initial_w (np.array): initial weight vector
+        max_iters (int): number of iterations
+        gamma (float): learning rate
+    """
+    # ---- Train model ----
+    w, losses_train, weights = reg_logistic_regression(y_train, x_train, lambda_, initial_w, max_iters, gamma)
+    
+    # ---- Threshold sweep ----
+    thresholds = np.arange(0.0, 1.0 + 0.01, 0.01)
+    f1_train, acc_train = [], []
+    f1_val, acc_val = [], []
+
+    for t in thresholds:
+        y_pred_train = predict_labels_logistic(x_train, w, t)
+        y_pred_val = predict_labels_logistic(x_val, w, t)
+
+        scores_train = compute_scores(y_train, y_pred_train)
+        scores_val = compute_scores(y_val, y_pred_val)
+
+        f1_train.append(scores_train['f1_score'])
+        acc_train.append(scores_train['accuracy'])
+        f1_val.append(scores_val['f1_score'])
+        acc_val.append(scores_val['accuracy'])
+
+    # ---- Best threshold ----
+    best_idx = np.argmax(f1_val)
+    best_threshold = thresholds[best_idx]
+    print(f"✅ Best threshold: {best_threshold:.2f} | F1_val = {f1_val[best_idx]:.3f} | Acc_val = {acc_val[best_idx]:.3f}")
+
+    # ---- Plot F1 & Accuracy vs Threshold ----
+    plt.figure(figsize=(8,5))
+    plt.plot(thresholds, acc_train, label='Train Accuracy',  marker='o',  markersize=3, color='blue')
+    plt.plot(thresholds, acc_val, label='Val Accuracy',  marker='x', markersize=3, color='green')
+    plt.plot(thresholds, f1_train, label='Train F1', marker='o',markersize = 3, color='orange')
+    plt.plot(thresholds, f1_val, label='Val F1',  marker='x', markersize=3, color='red')
+    plt.axvline(best_threshold, color='red', linestyle=':', label=f'Best Threshold ({best_threshold:.2f})')
+    plt.xlabel('Threshold')
+    plt.ylabel('Score')
+    plt.title('F1 & Accuracy vs Threshold (Train & Validation)')
+    plt.legend()
+    plt.grid(alpha=0.5)
+    plt.show()
+    
+    # ---- Plot F1 & Loss vs Iterations ----
+    f1_scores = []
+    for i in weights:
+        y_train_pred = predict_labels_logistic(x_train, i, best_threshold)
+        scores = compute_scores(y_train, y_train_pred)
+        f1_scores.append(scores['f1_score'])
+    
+    fig, ax1 = plt.subplots(figsize=(7, 5))
+
+    ax1.plot(losses_train, color='tab:red', label='Loss')
+    ax1.set_xlabel('Iteration')
+    ax1.set_ylabel('Loss', color='tab:red')
+    ax1.tick_params(axis='y', labelcolor='tab:red')
+
+    ax2 = ax1.twinx()
+    ax2.plot(f1_scores, color='tab:blue', label='F1 Score')
+    ax2.set_ylabel('F1 Score', color='tab:blue')
+    ax2.tick_params(axis='y', labelcolor='tab:blue')
+    plt.title('Training Loss and F1 Score over Iterations')
+
+    plt.tight_layout()
+    plt.show()
+
+    return w, best_threshold, f1_val[best_idx], acc_val[best_idx], losses_train, f1_scores, weights
