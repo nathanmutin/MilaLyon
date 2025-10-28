@@ -101,22 +101,6 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
 
     return w, mse(y, tx, w)
 
-def build_poly(x, degree):
-    """Polynomial basis functions for input data x, for j=0 up to j=degree.
-
-    Args:
-        x (np.array): shape=(N,) input data
-        degree (int): polynomial degree
-        
-    Returns:
-        np.array: shape=(N,degree+1) matrix of polynomial features
-    """
-    
-    N = x.shape[0]
-    poly = np.ones((N, degree + 1))
-    for d in range(1, degree + 1):
-        poly[:, d] = x ** d
-    return poly 
 
 def least_squares(y, tx):
     """Least squares regression using normal equations.
@@ -499,3 +483,50 @@ def plot_training_validation_performance_reg(x_train, y_train, x_val, y_val,lamb
     plt.show()
 
     return w, best_threshold, f1_val[best_idx], acc_val[best_idx], losses_train, f1_scores, weights
+
+def build_poly(x, degree):
+    """Polynomial basis functions for input data x, for j=0 up to j=degree.
+
+    Args:
+        x (np.array): shape=(N,) input data
+        degree (int): polynomial degree
+        
+    Returns:
+        np.array: shape=(N,degree+1) matrix of polynomial features
+    """
+    
+    N = x.shape[0]
+    poly = [np.ones((N,1))]
+    for d in range(1, degree + 1):
+        poly.append(x ** d)
+    return np.concatenate(poly, axis=1) 
+
+def cross_validate_degrees (x,y, degrees, k=5, max_iters=1000, gamma =0.5):
+    """Perform k-fold CV to select the best polynomial degree using F1 score."""
+    folds = k_fold_indices(y, k)
+    results = {}
+
+    for degree in degrees:
+        f1_scores = []
+        thresholds = []
+        x_poly = build_poly(x, degree)
+        for i in range(k):
+            val_idx = folds[i]
+            train_idx = np.hstack([folds[j] for j in range(k) if j != i])
+            x_tr, y_tr = x_poly[train_idx], y[train_idx]
+            x_val, y_val = x_poly[val_idx], y[val_idx]
+
+            initial_w = np.zeros(x_tr.shape[1])
+            w, _, _ = logistic_regression(y_tr, x_tr, initial_w, max_iters, gamma)
+           
+            best_t, best_f1 = best_threshold(y_val, x_val, w)
+            y_pred = predict_labels_logistic(x_val, w, best_t)
+            f1_scores.append(best_f1)
+            thresholds.append(best_t)
+
+        results[degree] = np.mean(f1_scores)
+        print(f"Degree={degree} | Mean F1={np.mean(f1_scores):.4f}")
+
+    best_degree = max(results, key=results.get)
+    print(f"\n✅ Best degree: {best_degree} (F1={results[best_degree]:.4f})")
+    return best_degree, results
