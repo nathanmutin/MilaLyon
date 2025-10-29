@@ -294,58 +294,42 @@ def detect_feature_type(x, cat_threshold=11):
             cat[i] = 'continuous'
     
     return cat
-
-def drop_highly_correlated(x_train, x_test, feature_names, threshold=0.9):
+def drop_highly_correlated(x_train, feature_names, threshold=0.9):
     """
-    Drops one feature from each highly correlated pair based on the number of NaNs.
-    The feature with more NaNs is dropped.
+    Identify features that are highly correlated with each other. From each highly correlated pair,
+    the feature with more missing values (NaNs) is marked for dropping. 
 
     Args:
         x_train (np.array): shape = (N, D) training feature matrix
-        x_test (np.array): shape = (M, D) test feature matrix
         feature_names (list or np.array): feature names corresponding to columns
         threshold (float): correlation threshold to consider a pair highly correlated
 
     Returns:
-        tuple:
-            x_train_reduced (np.array): training data with correlated features removed
-            x_test_reduced (np.array): test data with correlated features removed
-            kept_cols (np.array): boolean mask of kept columns
-            dropped_names (list): names of the dropped features
+        dropped_names (list): names of features to drop
+        corr_matrix (np.array): correlation matrix of all features
     """
     # Compute correlation matrix
-    corr = np.corrcoef(x_train, rowvar=False)
+    corr_matrix = np.corrcoef(x_train, rowvar=False)
 
     # Count NaNs per feature
     nan_counts = np.isnan(x_train).sum(axis=0)
 
-    # Track columns to drop
+    D = corr_matrix.shape[0]
     drop_cols = set()
-    D = corr.shape[0]
 
+    # Identify highly correlated pairs
     for i in range(D):
         for j in range(i + 1, D):
-            if abs(corr[i, j]) > threshold:
-                # Drop the feature with more NaNs; if equal, drop j
+            if abs(corr_matrix[i, j]) > threshold:
                 if nan_counts[i] > nan_counts[j]:
                     drop_cols.add(i)
                 else:
                     drop_cols.add(j)
 
-    # Build mask of columns to keep
-    kept_cols = np.array([i not in drop_cols for i in range(D)])
+    # Get names of dropped features
+    dropped_names = [feature_names[i] for i in drop_cols]
 
-    # Reduce train and test sets
-    x_train_reduced = x_train[:, kept_cols]
-    x_test_reduced = x_test[:, kept_cols]
-
-    # Get dropped feature names
-    dropped_names = [feature_names[i] for i in range(D) if i in drop_cols]
-
-    print(f"Dropped {len(dropped_names)} highly correlated features:")
-    print(dropped_names)
-
-    return x_train_reduced, x_test_reduced, kept_cols, dropped_names
+    return dropped_names, corr_matrix
 
 def clip_outliers(x_train, x_test=None, n_std=3):
     """
@@ -526,6 +510,13 @@ def print_shapes(data):
 
 
 def preprocess_data(data, nan_drop_threshold=0.2, correlation_threshold=0.02, n_std=3, only_health_related=True, split_val=False, val_size=0.1):
+    
+    # Replace zeros and default values before preprocessing
+    convert_to_times_per_week(data['x_train'], data['bad_format_no_better'])
+    convert_to_times_per_week(data['x_test'], data['bad_format_no_better'])
+    replace_by_zero(data['x_train'], data['x_test'], data['zero_values'])
+    replace_default_with_nan(data['x_train'], data['x_test'], data['default_values'])
+    print_shapes(data)
 
     # Identify and drop features with many missing values
     nan_features = identify_too_many_missing(data["x_train"], data["feature_names"], threshold=nan_drop_threshold)
@@ -550,7 +541,12 @@ def preprocess_data(data, nan_drop_threshold=0.2, correlation_threshold=0.02, n_
     # Identify and drop features with low correlation to the target
     low_corr_features, _ = identify_low_correlation(data["x_train"], data["y_train"], data["feature_names"], threshold=correlation_threshold)
     drop_features_from_dictionnary(data, low_corr_features)
-    print(len(low_corr_features), "features with low correlation dropped.")
+    print(len(low_corr_features), "features with low correlation to target dropped.")
+    
+    # Identify and drop features with high correlation twithin one another
+    high_corr_features, _ = drop_highly_correlated(data["x_train"], data["feature_names"])
+    drop_features_from_dictionnary(data, high_corr_features)
+    print(len(high_corr_features), "features with high correlation dropped.")
 
     #Clip outliers
     clip_outliers(data['x_train'], data['x_test'], n_std=n_std)
