@@ -5,6 +5,7 @@
 - [Dataset](#dataset)
 - [Usage](#usage)
 - [Repo Structure](#repo-structure)
+- [MilaLyon Team](#milalyon-team)
   
 ## Overview
 
@@ -34,3 +35,10 @@ Respondents were classified as having MICHD if a health professional had diagnos
 ## Usage
 
 ## Repo Structure
+
+## MilaLyon Team
+
+- Beatrice Campo
+- Nathan Mutin
+- Valentin Planes
+EPFL Machine Learning — Project 1 (Fall 2025)
