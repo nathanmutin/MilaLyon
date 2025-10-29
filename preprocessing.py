@@ -1,4 +1,5 @@
 import numpy as np
+from implementations import *
 
 def normalize(x, x_test=None):
     """Normalizes the data set to have zero mean and unit variance.
@@ -249,13 +250,12 @@ def identify_low_correlation(x_train, y_train, feature_names, threshold=0.1):
     
     return low_corr_names, correlations
 
-def replace_nan(x_train, x_test):
+def replace_nan(x_train, x_test, continuos_flag):
     for i in range(x_train.shape[1]):
         # Get non-nan values
         non_nan_values = x_train[~np.isnan(x_train[:, i]), i]
-        unique_values = np.unique(non_nan_values)
-        
-        if len(unique_values) < 10:
+    
+        if continuos_flag[i] == 0:
             # Use mode for categorical features
             mode = np.bincount(non_nan_values.astype(int)).argmax()
             x_train[np.isnan(x_train[:, i]), i] = mode
@@ -460,8 +460,11 @@ def drop_features_from_dictionnary(data_dict, feature_names_to_drop):
             data_dict['one_hot'] = np.delete(data_dict['one_hot'], index)
             data_dict['zero_values'] = np.delete(data_dict['zero_values'], index)
             data_dict['default_values'] = np.delete(data_dict['default_values'], index)
+            data_dict['ordinal'] = np.delete(data_dict['ordinal'], index)
+            data_dict['continuos'] = np.delete(data_dict['continuos'], index)
         else:
             print(f"Feature {feature_name} not found in feature names.")
+
 
 def one_hot_encode(data_dict):
     """
@@ -498,6 +501,8 @@ def one_hot_encode(data_dict):
                 data_dict['one_hot'] = np.append(data_dict['one_hot'], 1)
                 data_dict['zero_values'] = np.append(data_dict['zero_values'], data_dict['zero_values'][idx])
                 data_dict['default_values'] = np.append(data_dict['default_values'], data_dict['default_values'][idx])
+                data_dict['ordinal'] = np.append(data_dict['ordinal'], data_dict['ordinal'][idx])
+                data_dict['continuos'] = np.append(data_dict['continuos'], data_dict['continuos'][idx])
 
             # Drop the original feature
             idx = np.where(data_dict['feature_names'] == feature)[0][0]
@@ -512,3 +517,52 @@ def one_hot_encode(data_dict):
             data_dict['one_hot'] = np.delete(data_dict['one_hot'], idx)
             data_dict['zero_values'] = np.delete(data_dict['zero_values'], idx)
             data_dict['default_values'] = np.delete(data_dict['default_values'], idx)
+            data_dict['ordinal'] = np.delete(data_dict['ordinal'], idx)
+            data_dict['continuos'] = np.delete(data_dict['continuos'], idx)
+
+def print_shapes(data):
+    for key, value in data.items():
+        print(f"{key}: {type(value)} with shape {value.shape if isinstance(value, np.ndarray) else 'N/A'}")
+
+
+def preprocess_data(data, nan_drop_threshold=0.2, correlation_threshold=0.02, n_std=3, only_health_related=True, split_val=False, val_size=0.1):
+
+    # Identify and drop features with many missing values
+    nan_features = identify_too_many_missing(data["x_train"], data["feature_names"], threshold=nan_drop_threshold)
+    drop_features_from_dictionnary(data, nan_features)
+    print(len(nan_features), "features with too many missing values dropped.")
+
+    # Replace remaining NaNs with either mean or most frequent value
+    replace_nan(data["x_train"], data["x_test"], data['continuos'])
+
+    # Keep only health-related features if specified
+    if only_health_related:
+        non_health_features = data['feature_names'][~data['health_related']].tolist()
+        drop_features_from_dictionnary(data, non_health_features)
+        print(len(non_health_features), "non health-related features dropped.")
+
+    # One-hot encode categorical features
+    n_features_before = data['x_train'].shape[1]
+    one_hot_encode(data)
+    n_features_after = data['x_train'].shape[1]
+    print(f"One-hot encoding completed. Number of features increased from {n_features_before} to {n_features_after}.")
+
+    # Identify and drop features with low correlation to the target
+    low_corr_features, _ = identify_low_correlation(data["x_train"], data["y_train"], data["feature_names"], threshold=correlation_threshold)
+    drop_features_from_dictionnary(data, low_corr_features)
+    print(len(low_corr_features), "features with low correlation dropped.")
+
+    #Clip outliers
+    clip_outliers(data['x_train'], data['x_test'], n_std=n_std)
+
+    #Normalize features
+    data['x_train'], data['x_test'] = min_max_normalize(data['x_train'], data['x_test'])
+    data['y_train'] = (data['y_train'] == 1).astype(int)
+
+    if split_val:
+        data['x_train'], data['y_train'], data['x_val'], data['y_val'] = split_train_val(data['x_train'], data['y_train'], val_size=val_size)
+
+
+
+
+
