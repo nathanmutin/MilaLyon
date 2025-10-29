@@ -88,7 +88,7 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
         binary = np.zeros(len(feature_names), dtype=bool)  # not used here
         one_hot = np.zeros(len(feature_names), dtype=bool)  # not used here
         ordinal = np.zeros(len(feature_names), dtype=bool) 
-        continuos = np.zeros(len(feature_names), dtype=bool) 
+        continuous = np.zeros(len(feature_names), dtype=bool) 
         
         # Parse the file row by row
         for i, row in enumerate(reader):
@@ -162,12 +162,12 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
             except ValueError:
                 ordinal[i] = False
              
-            # Twelveth column indicates if the feature is continuos
+            # Twelveth column indicates if the feature is continuous
             try:
                 if int(row[12]) == 1:
-                    continuos[i] = True
+                    continuous[i] = True
             except ValueError:
-                continuos[i] = False  
+                continuous[i] = False  
                 
 
     if dictionnary:
@@ -187,10 +187,10 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
             'zero_values': zero_values,
             'default_values': default_values,
             'ordinal': ordinal,
-            'continuos': continuos
+            'continuous': continuous
         }
-        
-    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, health_related, better_elsewhere, bad_format_no_better, binary, one_hot, ordinal, continuos
+
+    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, health_related, better_elsewhere, bad_format_no_better, binary, one_hot, ordinal, continuous
 
 
 def create_csv_submission(ids, y_pred, name):

@@ -494,24 +494,38 @@ def cross_validate_hyperparameter(y, tx, train_func, hyperparams, k=5):
     print(f"\n✅ Best param: {best_param} (F1={results[best_param]:.4f})")
     return best_param, results
 
-def build_poly(x, degree):
+def build_poly(x, degree, to_expand=None):
     """Polynomial basis functions for input data x, for j=0 up to j=degree.
 
     Args:
         x (np.array): shape=(N,) input data
         degree (int): polynomial degree
-        
+        to_expand (np.array of bool): shape=(D,) indicating which features to expand, if None all features are expanded
+
     Returns:
         np.array: shape=(N,degree+1) matrix of polynomial features
     """
+    assert degree >= 1, "Degree must be at least 1"
+    
+    # Handle to_expand default
+    if to_expand is None:
+        to_expand = np.full(x.shape[1], True, dtype=bool)
     
     N = x.shape[0]
+    # degree 0 (bias term)
     poly = [np.ones((N,1))]
-    for d in range(1, degree + 1):
-        poly.append(x ** d)
+    # degree 1 (original features)
+    poly.append(x)
+    # degree 2 to degree max
+    for d in range(2, degree + 1):
+        # Only expand features that are marked in to_expand
+        # <=> only add x[:, j] ** d if to_expand[j] is True
+        for j in range(x.shape[1]):
+            if to_expand[j]:
+                poly.append((x[:, j] ** d).reshape(-1, 1))
     return np.concatenate(poly, axis=1) 
 
-def cross_validate_degrees(x,y, degrees, k=5, max_iters=1000, gamma =0.5):
+def cross_validate_degrees(x,y, degrees, to_expand, k=5, max_iters=1000, gamma=0.5):
     """Perform k-fold CV to select the best polynomial degree using F1 score."""
     folds = k_fold_indices(len(y), k)
     results = {}
@@ -519,7 +533,7 @@ def cross_validate_degrees(x,y, degrees, k=5, max_iters=1000, gamma =0.5):
     for degree in degrees:
         f1_scores = []
         thresholds = []
-        x_poly = build_poly(x, degree)
+        x_poly = build_poly(x, degree, to_expand=to_expand)
         for i in range(k):
             val_idx = folds[i]
             train_idx = np.hstack([folds[j] for j in range(k) if j != i])

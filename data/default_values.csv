@@ -1,4 +1,4 @@
-Feature,Value for zero,Combination of other indicators,Health related,"Bad format, better format elsewhere","Bad format, no better",Binary,One-hot,Values for no response,,,Ordinal,Continuos,Useless
+Feature,Value for zero,Combination of other indicators,Health related,"Bad format, better format elsewhere","Bad format, no better",Binary,One-hot,Values for no response,,,Ordinal,Continuous,Useless
 _STATE,,,,,,,,,,,,,1
 FMONTH,,,,,,,,,,,,,1
 IDATE,,,,1,,,,,,,,,1
