@@ -250,12 +250,12 @@ def identify_low_correlation(x_train, y_train, feature_names, threshold=0.1):
     
     return low_corr_names, correlations
 
-def replace_nan(x_train, x_test, continuos_flag):
+def replace_nan(x_train, x_test, continuous_flag):
     for i in range(x_train.shape[1]):
         # Get non-nan values
         non_nan_values = x_train[~np.isnan(x_train[:, i]), i]
     
-        if continuos_flag[i] == 0:
+        if continuous_flag[i] == 0:
             # Use mode for categorical features
             mode = np.bincount(non_nan_values.astype(int)).argmax()
             x_train[np.isnan(x_train[:, i]), i] = mode
@@ -445,7 +445,7 @@ def drop_features_from_dictionnary(data_dict, feature_names_to_drop):
             data_dict['zero_values'] = np.delete(data_dict['zero_values'], index)
             data_dict['default_values'] = np.delete(data_dict['default_values'], index)
             data_dict['ordinal'] = np.delete(data_dict['ordinal'], index)
-            data_dict['continuos'] = np.delete(data_dict['continuos'], index)
+            data_dict['continuous'] = np.delete(data_dict['continuous'], index)
         else:
             print(f"Feature {feature_name} not found in feature names.")
 
@@ -486,7 +486,7 @@ def one_hot_encode(data_dict):
                 data_dict['zero_values'] = np.append(data_dict['zero_values'], data_dict['zero_values'][idx])
                 data_dict['default_values'] = np.append(data_dict['default_values'], data_dict['default_values'][idx])
                 data_dict['ordinal'] = np.append(data_dict['ordinal'], data_dict['ordinal'][idx])
-                data_dict['continuos'] = np.append(data_dict['continuos'], data_dict['continuos'][idx])
+                data_dict['continuous'] = np.append(data_dict['continuous'], data_dict['continuous'][idx])
 
             # Drop the original feature
             idx = np.where(data_dict['feature_names'] == feature)[0][0]
@@ -502,7 +502,7 @@ def one_hot_encode(data_dict):
             data_dict['zero_values'] = np.delete(data_dict['zero_values'], idx)
             data_dict['default_values'] = np.delete(data_dict['default_values'], idx)
             data_dict['ordinal'] = np.delete(data_dict['ordinal'], idx)
-            data_dict['continuos'] = np.delete(data_dict['continuos'], idx)
+            data_dict['continuous'] = np.delete(data_dict['continuous'], idx)
 
 def print_shapes(data):
     for key, value in data.items():
@@ -524,7 +524,7 @@ def preprocess_data(data, nan_drop_threshold=0.2, correlation_threshold=0.02, n_
     print(len(nan_features), "features with too many missing values dropped.")
 
     # Replace remaining NaNs with either mean or most frequent value
-    replace_nan(data["x_train"], data["x_test"], data['continuos'])
+    replace_nan(data["x_train"], data["x_test"], data['continuous'])
 
     # Keep only health-related features if specified
     if only_health_related:
