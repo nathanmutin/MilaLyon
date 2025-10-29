@@ -87,6 +87,8 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
         bad_format_no_better = np.zeros(len(feature_names), dtype=bool)
         binary = np.zeros(len(feature_names), dtype=bool)  # not used here
         one_hot = np.zeros(len(feature_names), dtype=bool)  # not used here
+        ordinal = np.zeros(len(feature_names), dtype=bool) 
+        continuos = np.zeros(len(feature_names), dtype=bool) 
         
         # Parse the file row by row
         for i, row in enumerate(reader):
@@ -103,9 +105,9 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
             except ValueError:
                 zero_values[i] = None  # no zero value
             
-            # Third column indicates if the feature is a combination of other indicators
+            # Third column indicates if the feature is a combination of other indicators and Thirteenth if it's related to unuseless information
             try:
-                if int(row[2]) == 1: # in CSV, True is represented as 1
+                if (int(row[2]) == 1 | int(row[13] == 1)): # in CSV, True is represented as 1
                     useless[i] = True
             except ValueError:
                 useless[i] = False
@@ -145,13 +147,29 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
             except ValueError:
                 one_hot[i] = False
 
-            # Remaining columns are default values for no response
+            # Columns from 8n to 10 are default values for no response
             default_values[i] = []
-            for val in row[8:]:
+            for val in row[8:11]:
                 try:
                     default_values[i].append(float(val))
                 except ValueError:
                     pass  # skip non-numeric default values
+                
+            # Eleventh column indicates if the feature is ordinal
+            try:
+                if int(row[11]) == 1:
+                    ordinal[i] = True
+            except ValueError:
+                ordinal[i] = False
+             
+            # Twelveth column indicates if the feature is continuos
+            try:
+                if int(row[12]) == 1:
+                    continuos[i] = True
+            except ValueError:
+                continuos[i] = False  
+                
+
     if dictionnary:
         return {
             'x_train': x_train,
@@ -167,10 +185,12 @@ def load_csv_data(data_path, max_rows = None, dictionnary=False):
             'binary': binary,
             'one_hot': one_hot,
             'zero_values': zero_values,
-            'default_values': default_values
+            'default_values': default_values,
+            'ordinal': ordinal,
+            'continuos': continuos
         }
         
-    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, health_related, better_elsewhere, bad_format_no_better, binary, one_hot
+    return x_train, x_test, y_train, train_ids, test_ids, feature_names, zero_values, default_values, useless, health_related, better_elsewhere, bad_format_no_better, binary, one_hot, ordinal, continuos
 
 
 def create_csv_submission(ids, y_pred, name):
