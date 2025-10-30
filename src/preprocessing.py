@@ -9,6 +9,8 @@ dimensionality reduction, oversampling, and data splitting utilities.
 import numpy as np
 from src.implementations import *
 
+
+# ---------------------- Normalization ----------------------
 def normalize(x, x_test=None):
     """Normalizes the data set to have zero mean and unit variance.
 
@@ -56,6 +58,9 @@ def min_max_normalize(x, x_test=None):
         return x, x_test
     return x
 
+
+
+# ---------------------- Imputation ----------------------
 
 def mean_imputation(x_train, x_test):
     """Impute missing values with the mean of each feature.
@@ -119,6 +124,8 @@ def replace_by_zero(x_train, x_test, zero_values):
             x_test[np.isnan(x_test[:, i]), i] = 0
 
 
+
+# ---------------------- Feature Engineering ----------------------
 def convert_to_times_per_week(x, feature_flags):
     """
     Converts bad-format features to 'times per week'.
@@ -188,6 +195,8 @@ def split_train_val(x_train, y_train, val_size=0.1, random_seed=42):
     return x_train_new, y_train_new, x_val, y_val
 
 
+
+# ---------------------- Feature Selection ----------------------
 def drop_too_many_missing(x_train, x_test, train_columns, threshold=0.2):
     """
     Drops features (columns) with more than a given percentage of missing values (NaNs).
@@ -328,6 +337,42 @@ def drop_highly_correlated(x_train, feature_names, threshold=0.9):
     return dropped_names, corr_matrix
 
 
+def drop_features_from_dictionnary(data_dict, feature_names_to_drop):
+    """
+    This function drops features from the data dictionnary.
+
+    Args:
+        data_dict (dict): dictionnary containing the data and meta-data
+        feature_names_to_drop (list): list of feature names to drop
+    Returns:
+        data_dict (dict): dictionnary containing the data and meta-data with features dropped
+    """
+    for feature_name in feature_names_to_drop:
+        if feature_name in data_dict["feature_names"]:
+            index = np.where(data_dict["feature_names"] == feature_name)[0][0]
+            data_dict["x_train"] = np.delete(data_dict["x_train"], index, axis=1)
+            data_dict["x_test"] = np.delete(data_dict["x_test"], index, axis=1)
+            data_dict["feature_names"] = np.delete(data_dict["feature_names"], index)
+            data_dict["useless"] = np.delete(data_dict["useless"], index)
+            data_dict["health_related"] = np.delete(data_dict["health_related"], index)
+            data_dict["better_elsewhere"] = np.delete(
+                data_dict["better_elsewhere"], index
+            )
+            data_dict["bad_format_no_better"] = np.delete(
+                data_dict["bad_format_no_better"], index
+            )
+            data_dict["binary"] = np.delete(data_dict["binary"], index)
+            data_dict["one_hot"] = np.delete(data_dict["one_hot"], index)
+            data_dict["zero_values"] = np.delete(data_dict["zero_values"], index)
+            data_dict["default_values"] = np.delete(data_dict["default_values"], index)
+            data_dict["ordinal"] = np.delete(data_dict["ordinal"], index)
+            data_dict["continuous"] = np.delete(data_dict["continuous"], index)
+        else:
+            print(f"Feature {feature_name} not found in feature names.")
+
+
+
+# ---------------------- Outlier Handling ----------------------
 def clip_outliers(x_train, x_test=None, n_std=3):
     """
     Clips outliers to within mean ± n_std * std for each feature.
@@ -377,6 +422,8 @@ def clip_outliers(x_train, x_test=None, n_std=3):
     return x_train_clipped, n_clipped
 
 
+
+# ---------------------- Dimensionality Reduction ----------------------
 def pca_reduce(x_train, x_test=None, variance_threshold=0.95):
     """
     Perform PCA and reduce dimensionality to preserve given variance.
@@ -423,40 +470,9 @@ def pca_reduce(x_train, x_test=None, variance_threshold=0.95):
     return x_train_pca, eigvecs[:, :k], explained_variance[:k]
 
 
-def drop_features_from_dictionnary(data_dict, feature_names_to_drop):
-    """
-    This function drops features from the data dictionnary.
-
-    Args:
-        data_dict (dict): dictionnary containing the data and meta-data
-        feature_names_to_drop (list): list of feature names to drop
-    Returns:
-        data_dict (dict): dictionnary containing the data and meta-data with features dropped
-    """
-    for feature_name in feature_names_to_drop:
-        if feature_name in data_dict["feature_names"]:
-            index = np.where(data_dict["feature_names"] == feature_name)[0][0]
-            data_dict["x_train"] = np.delete(data_dict["x_train"], index, axis=1)
-            data_dict["x_test"] = np.delete(data_dict["x_test"], index, axis=1)
-            data_dict["feature_names"] = np.delete(data_dict["feature_names"], index)
-            data_dict["useless"] = np.delete(data_dict["useless"], index)
-            data_dict["health_related"] = np.delete(data_dict["health_related"], index)
-            data_dict["better_elsewhere"] = np.delete(
-                data_dict["better_elsewhere"], index
-            )
-            data_dict["bad_format_no_better"] = np.delete(
-                data_dict["bad_format_no_better"], index
-            )
-            data_dict["binary"] = np.delete(data_dict["binary"], index)
-            data_dict["one_hot"] = np.delete(data_dict["one_hot"], index)
-            data_dict["zero_values"] = np.delete(data_dict["zero_values"], index)
-            data_dict["default_values"] = np.delete(data_dict["default_values"], index)
-            data_dict["ordinal"] = np.delete(data_dict["ordinal"], index)
-            data_dict["continuous"] = np.delete(data_dict["continuous"], index)
-        else:
-            print(f"Feature {feature_name} not found in feature names.")
 
 
+# ---------------------- One-Hot Encoding ----------------------
 def one_hot_encode(data_dict):
     """
     This function one-hot encodes the categorical features in the data dictionnary.
@@ -545,6 +561,9 @@ def one_hot_encode(data_dict):
             data_dict["continuous"] = np.delete(data_dict["continuous"], idx)
 
 
+
+
+# ---------------------- Utilities ----------------------
 def print_shapes(data):
     for key, value in data.items():
         print(
@@ -552,6 +571,9 @@ def print_shapes(data):
         )
 
 
+
+
+# ---------------------- Preprocessing Pipeline ----------------------
 def preprocess_data(
     data,
     nan_drop_threshold=0.2,
@@ -627,6 +649,8 @@ def preprocess_data(
         )
 
 
+
+# ---------------------- Oversampling ----------------------
 def oversample_data(x, y, ratio=1.0, seed=42):
     """
     Randomly oversample the minority class to reach the desired ratio.
