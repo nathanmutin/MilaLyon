@@ -10,10 +10,10 @@ This script:
 """
 
 import numpy as np
-from helpers import *
-from implementations import *
-from preprocessing import *
-from model_evaluation import *
+from src.helpers import *
+from src.implementations import *
+from src.preprocessing import *
+from src.model_evaluation import *
 
 # -------------------------------------------------------------
 # Configuration
@@ -24,7 +24,7 @@ OUTPUT_FILE = "logistic_regression_submission.csv"
 # Hyperparameters previously determined via cross-validation
 BEST_GAMMA = 0.5
 BEST_DEGREE = 2
-MAX_ITERS = 1000
+MAX_ITERS = 1500
 BEST_THRESHOLD = 0.17
 
 
