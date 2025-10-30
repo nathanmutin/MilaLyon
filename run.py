@@ -18,7 +18,7 @@ from model_evaluation import *
 # -------------------------------------------------------------
 # Configuration
 # -------------------------------------------------------------
-DATA_FOLDER = "C:/Users/ACER/OneDrive - epfl.ch/Desktop/ML/dataset/"
+DATA_FOLDER = "./data/"
 OUTPUT_FILE = "logistic_regression_submission.csv"
 
 # Hyperparameters previously determined via cross-validation
