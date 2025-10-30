@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from implementations import *
-from preprocessing import *
-from model_evaluation import *
+from src.implementations import *
+from src.preprocessing import *
+from src.model_evaluation import *
 
 
 def k_fold_indices(N, k, seed=42):

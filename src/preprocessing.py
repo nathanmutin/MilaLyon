@@ -1,5 +1,5 @@
 import numpy as np
-from implementations import *
+from src.implementations import *
 
 
 def normalize(x, x_test=None):

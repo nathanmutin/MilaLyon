@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from implementations import *
-from preprocessing import *
+from src.implementations import *
+from src.preprocessing import *
 
 
 def compute_scores(y_true, y_pred):
