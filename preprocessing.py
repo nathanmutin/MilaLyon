@@ -267,32 +267,6 @@ def replace_nan(x_train, x_test, continuous_flag):
             x_test[np.isnan(x_test[:, i]), i] = mean
     return x_train, x_test
 
-def detect_feature_type(x, cat_threshold=11):
-    """
-    Automatically detect feature type.
-    
-    Args:
-        x (np.array): shape = (N,D) feature matrix
-        cat_threshold (int): maximum number of unique values to consider a feature categorical
-    
-    Returns:
-        cat (np.array): shape = (D,) array of strings indicating feature type ('binary', 'categorical', 'continuous', 'constant', 'unknown')
-    """
-    cat = np.empty(x.shape[1], dtype=object)
-    
-    for i in range(x.shape[1]):
-        n_unique_vals = len(np.unique(x[~np.isnan(x[:, i]), i]))  # ignore NaNs
-        if n_unique_vals == 0:
-            cat[i] = 'unknown'  # all values are NaN
-        elif n_unique_vals == 1:
-            cat[i] = 'constant'  # only one unique value
-        elif n_unique_vals == 2:
-            cat[i] = 'binary'
-        elif n_unique_vals <= cat_threshold:
-            cat[i] = 'categorical'
-        else:
-            cat[i] = 'continuous'
-    
     return cat
 def drop_highly_correlated(x_train, feature_names, threshold=0.9):
     """
@@ -559,6 +533,43 @@ def preprocess_data(data, nan_drop_threshold=0.2, correlation_threshold=0.02, n_
         data['x_train'], data['y_train'], data['x_val'], data['y_val'] = split_train_val(data['x_train'], data['y_train'], val_size=val_size)
 
 
+def oversample_data(x, y, ratio=1.0, seed=42):
+    """
+    Randomly oversample the minority class to reach the desired ratio.
 
+    Args:
+        x (np.array): shape (N, D), features
+        y (np.array): shape (N,), binary labels (0 or 1)
+        ratio (float): desired minority/majority ratio after resampling.
+                       e.g., ratio=1.0 => fully balanced (equal classes)
+                             ratio=0.5 => minority has half as many as majority
+        seed (int): random seed for reproducibility
+
+    Returns:
+        x_resampled, y_resampled: oversampled dataset
+    """
+    np.random.seed(seed)
+
+    # Separate classes
+    x_min, x_maj = x[y == 1], x[y == 0]
+    n_min, n_maj = len(x_min), len(x_maj)
+
+    # Determine how many minority samples we need
+    target_min = int(ratio * n_maj)
+    if target_min <= n_min:
+        return x, y  # already balanced enough
+
+    # Sample with replacement from minority class
+    idx = np.random.choice(n_min, target_min - n_min, replace=True)
+    x_extra = x_min[idx]
+    y_extra = np.ones(len(idx))
+
+    # Combine
+    x_res = np.vstack((x, x_extra))
+    y_res = np.hstack((y, y_extra))
+
+    # Shuffle
+    perm = np.random.permutation(len(y_res))
+    return x_res[perm], y_res[perm]
 
 
