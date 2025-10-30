@@ -1,18 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def mae(y, tx, w):
     """Compute the Mean Absolute Error (MAE)
-    
-        Args:
-        y (np.array): shape=(N,) target values
-        tx (np.array): shape=(N,D) feature matrix
-        w (np.array): shape=(D,) weights
-        
-        Returns:
-            float: MAE loss value
-        """
+
+    Args:
+    y (np.array): shape=(N,) target values
+    tx (np.array): shape=(N,D) feature matrix
+    w (np.array): shape=(D,) weights
+
+    Returns:
+        float: MAE loss value
+    """
     return np.mean(np.abs(tx @ w - y))
+
 
 def mse(y, tx, w):
     """Compute the Mean Squared Error (MSE) with a factor 1/2.
@@ -26,6 +28,7 @@ def mse(y, tx, w):
         float: MSE loss value
     """
     return np.mean((tx @ w - y) ** 2) / 2
+
 
 def grid_search(y, tx, grid_w0, grid_w1):
     """Grid search for optimal weights in linear regression.
@@ -41,7 +44,7 @@ def grid_search(y, tx, grid_w0, grid_w1):
             best_w (np.array): shape=(D,) optimal weights
             best_loss (float): minimal loss value
     """
-    best_loss = float('inf')
+    best_loss = float("inf")
     best_w = None
 
     for w0 in grid_w0:
@@ -53,6 +56,7 @@ def grid_search(y, tx, grid_w0, grid_w1):
                 best_w = w
 
     return best_w, best_loss
+
 
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma, return_history=False):
     """Linear regression using gradient descent.
@@ -68,7 +72,7 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma, return_history=Fal
     Returns:
         w (np.array): shape=(D,) final weights
         loss (float): final loss value
-        
+
         if return_history:
             weights (list of np.array): history of weights
             losses (list of float): history of loss values
@@ -86,6 +90,7 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma, return_history=Fal
 
     return weights[-1], losses[-1]
 
+
 def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma, return_history=False):
     """Linear regression using stochastic gradient descent.
 
@@ -100,7 +105,7 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma, return_history=Fa
     Returns:
         w (np.array): shape=(D,) final weights
         loss (float): final loss value
-        
+
         if return_history:
             weights (list of np.array): history of weights
             losses (list of float): history of loss values
@@ -113,7 +118,12 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma, return_history=Fa
 
         # stochastic gradient descent step
         # d(mse)/dw =  x_i (x_i w - y_i)
-        weights.append(weights[-1] - gamma * tx[random_index] * (tx[random_index] @ weights[-1] - y[random_index]))
+        weights.append(
+            weights[-1]
+            - gamma
+            * tx[random_index]
+            * (tx[random_index] @ weights[-1] - y[random_index])
+        )
         losses.append(mse(y, tx, weights[-1]))
 
     if return_history:
@@ -139,6 +149,7 @@ def least_squares(y, tx):
 
     return w, mse(y, tx, w)
 
+
 def ridge_regression(y, tx, lambda_):
     """Ridge regression using normal equations.
 
@@ -157,6 +168,7 @@ def ridge_regression(y, tx, lambda_):
     w = np.linalg.solve(tx.T @ tx + 2 * N * lambda_ * np.eye(D), tx.T @ y)
     return w, mse(y, tx, w)
 
+
 def sigmoid(t):
     """Apply the sigmoid function on t.
 
@@ -167,6 +179,7 @@ def sigmoid(t):
         np.array: sigmoid(t)
     """
     return 1 / (1 + np.exp(-t))
+
 
 def logistic_negative_log_likelihood(y, tx, w):
     """Compute the negative log likelihood for logistic regression.
@@ -181,7 +194,8 @@ def logistic_negative_log_likelihood(y, tx, w):
     # - mean(y log(pred) + (1-y) log(1-pred))
     # with pred = sigmoid(tx @ w)
     # More efficient implementation after a few algebraic manipulations
-    return np.mean(- y * (tx @ w) + np.log(1 + np.exp(tx @ w)))
+    return np.mean(-y * (tx @ w) + np.log(1 + np.exp(tx @ w)))
+
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma, return_history=False):
     """Logistic regression using gradient descent (y ∈ {0,1}).
@@ -197,14 +211,14 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma, return_history=False
     Returns:
         w (np.array): shape=(D,) final weights
         loss (float): final loss value
-        
+
         if return_history:
             weights (list of np.array): history of weights
             losses (list of float): history of loss values
     """
     weights = [initial_w]
     losses = [logistic_negative_log_likelihood(y, tx, initial_w)]
-    
+
     # Minimize the negative log likelihood
     for _ in range(max_iters):
         # Compute gradient
@@ -216,10 +230,13 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma, return_history=False
 
     if return_history:
         return weights, losses
-    
+
     return weights[-1], losses[-1]
 
-def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, return_history=False):
+
+def reg_logistic_regression(
+    y, tx, lambda_, initial_w, max_iters, gamma, return_history=False
+):
     """Regularized logistic regression using gradient descent
         (y ∈ {0,1}, with regularization term λ∥w∥2)
 
@@ -235,7 +252,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, return_
     Returns:
         w (np.array): shape=(D,) final weights
         loss (float): final loss value
-        
+
         if return_history:
             weights (list of np.array): history of weights
             losses (list of float): history of loss values
@@ -246,7 +263,9 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, return_
     for _ in range(max_iters):
         # gradient descent step
         pred = sigmoid(tx @ weights[-1])  # sigmoid function
-        gradient = tx.T @ (pred - y) / len(y) + 2 * lambda_ * weights[-1]  # gradient of the regularized loss
+        gradient = (
+            tx.T @ (pred - y) / len(y) + 2 * lambda_ * weights[-1]
+        )  # gradient of the regularized loss
         weights.append(weights[-1] - gamma * gradient)
         losses.append(logistic_negative_log_likelihood(y, tx, weights[-1]))
 
@@ -255,7 +274,10 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, return_
 
     return weights[-1], losses[-1]
 
-def weighted_reg_logistic_regression(y, tx, lambda_, sample_weights, initial_w, max_iters, gamma, return_history=False):
+
+def weighted_reg_logistic_regression(
+    y, tx, lambda_, sample_weights, initial_w, max_iters, gamma, return_history=False
+):
     """Weighted and regularized logistic regression using gradient descent
        Same as reg_logistic_regression but with the learning rate is scaled by
        sample weights
@@ -273,21 +295,23 @@ def weighted_reg_logistic_regression(y, tx, lambda_, sample_weights, initial_w, 
     Returns:
         w (np.array): shape=(D,) final weights
         loss (float): final loss value
-        
+
         if return_history:
             weights (list of np.array): history of weights
             losses (list of float): history of loss values
     """
     # Normalize sample weights such that they sum to the number of samples
     sample_weights = sample_weights * len(y) / np.sum(sample_weights)
-    
+
     # Minimize the regularized negative log likelihood
     weights = [initial_w]
     losses = [logistic_negative_log_likelihood(y, tx, initial_w)]
     for _ in range(max_iters):
         # gradient descent step
         pred = sigmoid(tx @ weights[-1])  # sigmoid function
-        gradient = tx.T @ (sample_weights * (pred - y)) / len(y) + 2 * lambda_ * weights[-1]  # gradient of the regularized loss
+        gradient = (
+            tx.T @ (sample_weights * (pred - y)) / len(y) + 2 * lambda_ * weights[-1]
+        )  # gradient of the regularized loss
         weights.append(weights[-1] - gamma * gradient)
         losses.append(logistic_negative_log_likelihood(y, tx, weights[-1]))
 
@@ -296,14 +320,15 @@ def weighted_reg_logistic_regression(y, tx, lambda_, sample_weights, initial_w, 
 
     return weights[-1], losses[-1]
 
+
 def predict_labels_logistic(tx, w, threshold=0.5):
     """Generate class predictions for logistic regression.
-    
+
     Args:
         tx (np.array): feature matrix
         w (np.array): weights
         threshold (float): classification threshold
-    
+
     Returns:
         np.array: predicted class labels (0/1)
     """
@@ -323,14 +348,14 @@ def build_poly(x, degree, to_expand=None):
         np.array: shape=(N,degree+1) matrix of polynomial features
     """
     assert degree >= 1, "Degree must be at least 1"
-    
+
     # Handle to_expand default
     if to_expand is None:
         to_expand = np.full(x.shape[1], True, dtype=bool)
-    
+
     N = x.shape[0]
     # degree 0 (bias term)
-    poly = [np.ones((N,1))]
+    poly = [np.ones((N, 1))]
     # degree 1 (original features)
     poly.append(x)
     # degree 2 to degree max
@@ -340,6 +365,4 @@ def build_poly(x, degree, to_expand=None):
         for j in range(x.shape[1]):
             if to_expand[j]:
                 poly.append((x[:, j] ** d).reshape(-1, 1))
-    return np.concatenate(poly, axis=1) 
-
-
+    return np.concatenate(poly, axis=1)

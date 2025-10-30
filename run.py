@@ -27,6 +27,7 @@ BEST_DEGREE = 2
 MAX_ITERS = 1000
 BEST_THRESHOLD = 0.17
 
+
 # -------------------------------------------------------------
 # Main pipeline
 # -------------------------------------------------------------
@@ -54,7 +55,12 @@ def main():
     print("🔹 Training logistic regression...")
     w_initial = np.zeros(x_train_poly.shape[1])
     w, loss = logistic_regression(
-        data["y_train"], x_train_poly, w_initial, MAX_ITERS, BEST_GAMMA, return_history=False
+        data["y_train"],
+        x_train_poly,
+        w_initial,
+        MAX_ITERS,
+        BEST_GAMMA,
+        return_history=False,
     )
     print(f"✅ Training complete. Final loss: {loss:.4f}")
 

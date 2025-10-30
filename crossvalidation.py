@@ -1,25 +1,25 @@
-import numpy as np 
-import matplotlib.pyplot as plt 
+import numpy as np
+import matplotlib.pyplot as plt
 from implementations import *
 from preprocessing import *
 from model_evaluation import *
 
-    
+
 def k_fold_indices(N, k, seed=42):
     """Generate indices for k-fold cross-validation.
-    
+
     Args:
         N (int): number of samples in the dataset
         k (int): number of folds
         seed (int): random seed for reproducibility
-    
+
     Returns:
         list of np.array: list containing k arrays of indices for each fold
     """
     np.random.seed(seed)
     indices = np.random.permutation(N)
     fold_sizes = np.full(k, N // k, dtype=int)
-    fold_sizes[:N % k] += 1
+    fold_sizes[: N % k] += 1
     current = 0
     folds = []
     for fold_size in fold_sizes:
@@ -29,11 +29,9 @@ def k_fold_indices(N, k, seed=42):
     return folds
 
 
-    
-
 def cross_validate_hyperparameter(y, tx, train_func, hyperparams, k=5):
     """Generic k-fold CV to select the best hyperparameter using F1 score.
-    
+
     Args:
         y (np.array): target vector
         tx (np.array): feature matrix
@@ -41,7 +39,7 @@ def cross_validate_hyperparameter(y, tx, train_func, hyperparams, k=5):
         hyperparams (np.ndarray): hyperparameters to evaluate
         k (int): number of folds
         plot (bool): whether to plot the results
-        
+
     Returns:
         best_hyperparam: hyperparameter yielding highest mean F1-score
         results (dict): dictionary mapping each hyperparameter to its mean F1-score
@@ -59,7 +57,7 @@ def cross_validate_hyperparameter(y, tx, train_func, hyperparams, k=5):
             x_val, y_val = tx[val_idx], y[val_idx]
 
             w, _ = train_func(y_tr, x_tr, param)
-           
+
             best_t, best_f1 = best_threshold(y_val, x_val, w)
             f1_scores.append(best_f1)
             thresholds.append(best_t)
@@ -72,7 +70,7 @@ def cross_validate_hyperparameter(y, tx, train_func, hyperparams, k=5):
     return best_param, results
 
 
-def cross_validate_degrees(x,y, degrees, to_expand, k=5, max_iters=1000, gamma=0.5):
+def cross_validate_degrees(x, y, degrees, to_expand, k=5, max_iters=1000, gamma=0.5):
     """Perform k-fold CV to select the best polynomial degree using F1 score."""
     folds = k_fold_indices(len(y), k)
     results = {}
@@ -89,7 +87,7 @@ def cross_validate_degrees(x,y, degrees, to_expand, k=5, max_iters=1000, gamma=0
 
             initial_w = np.zeros(x_tr.shape[1])
             w, _ = logistic_regression(y_tr, x_tr, initial_w, max_iters, gamma)
-           
+
             best_t, best_f1 = best_threshold(y_val, x_val, w)
             y_pred = predict_labels_logistic(x_val, w, best_t)
             f1_scores.append(best_f1)

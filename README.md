@@ -41,7 +41,7 @@ data/
     x_train.csv
     y_train.csv
     x_test.csv
-    default_values.csv
+    features_description.csv
 ```
 
 ## Repo Structure
@@ -52,7 +52,7 @@ The repository is organized as follows:
 
 Source Code:
 
-- `helpers.py` - Utility functions for data loading and submission creation. It loads data from CSV files and the default_values.csv file necessarry for preprocessing.
+- `helpers.py` - Utility functions for data loading and submission creation. It loads data from CSV files and the features_description.csv file necessarry for preprocessing.
 - `preprocessing.py` — Functions for data cleaning and preprocessing. The function preprocess_data gathers all preprocessing steps and returns the cleaned data.
 - `implementations.py` — Contains implementations of machine learning algorithms used in the project.
 - `model_evaluation.py` — Evaluation of model performance, including accuracy and F1-score calculations.
