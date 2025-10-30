@@ -8,8 +8,12 @@ This script:
   3. Trains a logistic regression model.
   4. Generates predictions and saves the submission file.
 """
+import sys
+import os
 
-import numpy as np
+# Add the project root to Python path
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
+
 from src.helpers import *
 from src.implementations import *
 from src.preprocessing import *

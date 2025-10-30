@@ -1,3 +1,16 @@
+"""
+crossvalidation.py
+
+This module provides functions for k-fold cross-validation to select optimal hyperparameters
+or polynomial degrees for machine learning models. It supports generic training functions 
+and uses F1-score as the evaluation metric. 
+
+Functions:
+- k_fold_indices: Generate randomized indices for k-fold cross-validation.
+- cross_validate_hyperparameter: Select the best hyperparameter using k-fold CV and F1-score.
+- cross_validate_degrees: Select the best polynomial degree using k-fold CV and F1-score.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from src.implementations import *
@@ -6,15 +19,16 @@ from src.model_evaluation import *
 
 
 def k_fold_indices(N, k, seed=42):
-    """Generate indices for k-fold cross-validation.
+    """
+    Generate indices for k-fold cross-validation.
 
     Args:
-        N (int): number of samples in the dataset
-        k (int): number of folds
-        seed (int): random seed for reproducibility
+        N (int): Number of samples in the dataset.
+        k (int): Number of folds.
+        seed (int): Random seed for reproducibility.
 
     Returns:
-        list of np.array: list containing k arrays of indices for each fold
+        list of np.array: List containing k arrays of indices for each fold.
     """
     np.random.seed(seed)
     indices = np.random.permutation(N)
@@ -30,19 +44,20 @@ def k_fold_indices(N, k, seed=42):
 
 
 def cross_validate_hyperparameter(y, tx, train_func, hyperparams, k=5):
-    """Generic k-fold CV to select the best hyperparameter using F1 score.
+    """
+    Generic k-fold cross-validation to select the best hyperparameter using F1 score.
 
     Args:
-        y (np.array): target vector
-        tx (np.array): feature matrix
-        train_func (callable): training function that accepts (y_train, x_train, hyperparams) and returns (w, loss)
-        hyperparams (np.ndarray): hyperparameters to evaluate
-        k (int): number of folds
-        plot (bool): whether to plot the results
+        y (np.array): Target vector.
+        tx (np.array): Feature matrix.
+        train_func (callable): Training function accepting (y_train, x_train, hyperparam) 
+                               and returning (weights, loss).
+        hyperparams (np.ndarray): Array of hyperparameters to evaluate.
+        k (int): Number of folds.
 
     Returns:
-        best_hyperparam: hyperparameter yielding highest mean F1-score
-        results (dict): dictionary mapping each hyperparameter to its mean F1-score
+        best_hyperparam: Hyperparameter yielding the highest mean F1-score.
+        results (dict): Mapping of each hyperparameter to its mean F1-score.
     """
     folds = k_fold_indices(len(y), k)
     results = {}
@@ -71,7 +86,22 @@ def cross_validate_hyperparameter(y, tx, train_func, hyperparams, k=5):
 
 
 def cross_validate_degrees(x, y, degrees, to_expand, k=5, max_iters=1000, gamma=0.5):
-    """Perform k-fold CV to select the best polynomial degree using F1 score."""
+    """
+    Perform k-fold cross-validation to select the best polynomial degree using F1 score.
+
+    Args:
+        x (np.array): Feature matrix.
+        y (np.array): Target vector.
+        degrees (list or np.array): Polynomial degrees to evaluate.
+        to_expand (list): List of feature indices to apply polynomial expansion to.
+        k (int): Number of folds.
+        max_iters (int): Maximum iterations for logistic regression.
+        gamma (float): Learning rate for logistic regression.
+
+    Returns:
+        best_degree: Polynomial degree yielding the highest mean F1-score.
+        results (dict): Mapping of each degree to its mean F1-score.
+    """
     folds = k_fold_indices(len(y), k)
     results = {}
 

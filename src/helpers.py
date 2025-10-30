@@ -1,3 +1,13 @@
+"""
+helpers.py
+
+This module contains utility functions for data loading and submission generation.
+
+Functions:
+- load_csv_data: Load training and test data along with metadata and feature descriptions.
+- create_csv_submission: Generate a CSV file in the required format for submission to Kaggle or AIcrowd.
+"""
+
 import csv
 import numpy as np
 import os
@@ -5,30 +15,29 @@ import os
 
 def load_csv_data(data_path, max_rows=None, dictionnary=False):
     """
-    This function loads the data and returns the respectinve numpy arrays.
-    Remember to put the 3 files in the same folder and to not change the names of the files.
+    Load dataset and extract feature metadata.
+
+    Note:
+        Ensure that the three required files are in the same folder:
+        - x_train.csv
+        - y_train.csv
+        - x_test.csv
+        - features_description.csv
 
     Args:
-        data_path (str): datafolder path
-        max_rows (int, optional): If specified, limits the number of rows loaded from each file.
+        data_path (str): Path to the folder containing the data files.
+        max_rows (int, optional): Limit the number of rows loaded from each file.
+        dictionnary (bool, optional): If True, return data as a dictionary.
 
     Returns:
-        x_train (np.array): training data
-        x_test (np.array): test data
-        y_train (np.array): labels for training data in format (-1,1)
-        train_ids (np.array): ids of training data
-        test_ids (np.array): ids of test data
-        feature_names (np.array): list of feature names for training data
-        zero_values (dict): dictionary of values representing zero for each feature
-        default_values (dict of lists): dictionary of default values for each feature
-        useless (np.array): boolean array indicating if a feature is useless because is only a simple combination of other features
-        health_related (np.array): boolean array indicating if a feature is health related
-        better_elsewhere (np.array): boolean array indicating if a feature has a better format elsewhere
-        bad_format_no_better (np.array): boolean array indicating if a feature is in bad format with no better alternative
-        binary (np.array): boolean array indicating if a feature is binary
-        one_hot (np.array): boolean array indicating if a feature is one-hot encoded
+        tuple or dict: Depending on `dictionnary`, returns either a tuple of:
+            x_train, x_test, y_train, train_ids, test_ids, feature_names,
+            zero_values, default_values, useless, health_related,
+            better_elsewhere, bad_format_no_better, binary, one_hot,
+            ordinal, continuous
+        or a dictionary with the same keys.
     """
-
+        # Load CSV files
     y_train = np.genfromtxt(
         os.path.join(data_path, "y_train.csv"),
         delimiter=",",
@@ -50,129 +59,111 @@ def load_csv_data(data_path, max_rows=None, dictionnary=False):
         max_rows=max_rows,
     )
 
-    train_ids = x_train[:, 0].astype(dtype=int)
-    test_ids = x_test[:, 0].astype(dtype=int)
+    # Separate IDs from features
+    train_ids = x_train[:, 0].astype(int)
+    test_ids = x_test[:, 0].astype(int)
     x_train = x_train[:, 1:]
     x_test = x_test[:, 1:]
 
-    # --- Get column names from headers ---
+    # Load feature names from CSV header
     with open(os.path.join(data_path, "x_train.csv"), "r") as f:
-        feature_names = f.readline().strip().split(",")[1:]  # skip "Id"
-    feature_names = np.array(feature_names)
+        feature_names = np.array(f.readline().strip().split(",")[1:])
 
-    # The file "features_description.csv" contains useful information for each feature
-    # First line is header
-    # Columns are:
-    # - Feature
-    # - Value for zero
-    # - Combination of other indicators
-    # - Health related feature
-    # - Bad format, better format elsewhere
-    # - Bad format, no better
-    # - Binary
-    # - One-hot
-    # - Value for no response 1
-    # - Value for no response 2
-    # - ...
+    # Initialize arrays and dictionaries for feature metadata
+    zero_values = np.zeros(len(feature_names), dtype=object)
+    default_values = np.zeros(len(feature_names), dtype=object)
+    useless = np.zeros(len(feature_names), dtype=bool)
+    health_related = np.zeros(len(feature_names), dtype=bool)
+    better_elsewhere = np.zeros(len(feature_names), dtype=bool)
+    bad_format_no_better = np.zeros(len(feature_names), dtype=bool)
+    binary = np.zeros(len(feature_names), dtype=bool)
+    one_hot = np.zeros(len(feature_names), dtype=bool)
+    ordinal = np.zeros(len(feature_names), dtype=bool)
+    continuous = np.zeros(len(feature_names), dtype=bool)
+
+    # Read features_description.csv to extract metadata
     with open(os.path.join(data_path, "features_description.csv"), "r") as f:
         reader = csv.reader(f, delimiter=",")
         next(reader)  # Skip header
 
-        # Initialize dictionaries and arrays
-        zero_values = np.zeros(len(feature_names), dtype=object)
-        default_values = np.zeros(len(feature_names), dtype=object)
-        useless = np.zeros(len(feature_names), dtype=bool)
-        health_related = np.zeros(len(feature_names), dtype=bool)
-        better_elsewhere = np.zeros(len(feature_names), dtype=bool)
-        bad_format_no_better = np.zeros(len(feature_names), dtype=bool)
-        binary = np.zeros(len(feature_names), dtype=bool)  # not used here
-        one_hot = np.zeros(len(feature_names), dtype=bool)  # not used here
-        ordinal = np.zeros(len(feature_names), dtype=bool)
-        continuous = np.zeros(len(feature_names), dtype=bool)
-
-        # Parse the file row by row
         for i, row in enumerate(reader):
-            # First column is feature name
-            feature_name = row[0]
-
-            # Check that feature_name matches the i-th feature of the dataset
-            if feature_name != feature_names[i]:
+            # Validate feature name matches header
+            if row[0] != feature_names[i]:
                 raise ValueError(
-                    f"Feature n°{i} mismatch in features_description.csv: {feature_name} != {feature_names[i]}"
+                    f"Feature n°{i} mismatch: {row[0]} != {feature_names[i]}"
                 )
 
-            # Second column is the value representing zero
+            # Column 2: zero value
             try:
                 zero_values[i] = int(row[1])
             except ValueError:
-                zero_values[i] = None  # no zero value
+                zero_values[i] = None
 
-            # Third column indicates if the feature is a combination of other indicators and Thirteenth if it's related to unuseless information
+            # Column 3 + 14: feature is useless
             try:
-                if int(row[2]) == 1 | int(
-                    row[13] == 1
-                ):  # in CSV, True is represented as 1
+                if int(row[2]) == 1 or int(row[13] == 1):
                     useless[i] = True
             except ValueError:
                 useless[i] = False
 
-            # Fourth column indicates if the feature is health related
+            # Column 4: health-related
             try:
                 if int(row[3]) == 1:
                     health_related[i] = True
             except ValueError:
                 health_related[i] = False
 
-            # Fifth column indicates if the feature has a better format elsewhere
+            # Column 5: better format exists elsewhere
             try:
                 if int(row[4]) == 1:
                     better_elsewhere[i] = True
             except ValueError:
                 better_elsewhere[i] = False
 
-            # Sixth column indicates if the feature is in bad format with no better alternative
+            # Column 6: bad format with no better alternative
             try:
                 if int(row[5]) == 1:
                     bad_format_no_better[i] = True
             except ValueError:
                 bad_format_no_better[i] = False
 
-            # Seventh column indicates if the feature is binary (not used here)
+            # Column 7: binary
             try:
                 if int(row[6]) == 1:
                     binary[i] = True
             except ValueError:
                 binary[i] = False
 
-            # Eighth column indicates if the feature is one-hot encoded (not used here)
+            # Column 8: one-hot encoded
             try:
                 if int(row[7]) == 1:
                     one_hot[i] = True
             except ValueError:
                 one_hot[i] = False
 
-            # Columns from 8n to 10 are default values for no response
+            # Columns 9–11: default values for no response
             default_values[i] = []
             for val in row[8:11]:
                 try:
                     default_values[i].append(float(val))
                 except ValueError:
-                    pass  # skip non-numeric default values
+                    pass
 
-            # Eleventh column indicates if the feature is ordinal
+            # Column 12: ordinal
             try:
                 if int(row[11]) == 1:
                     ordinal[i] = True
             except ValueError:
                 ordinal[i] = False
 
-            # Twelveth column indicates if the feature is continuous
+            # Column 13: continuous
             try:
                 if int(row[12]) == 1:
                     continuous[i] = True
             except ValueError:
                 continuous[i] = False
 
+    # Return as dictionary or tuple
     if dictionnary:
         return {
             "x_train": x_train,
@@ -215,19 +206,21 @@ def load_csv_data(data_path, max_rows=None, dictionnary=False):
 
 def create_csv_submission(ids, y_pred, name):
     """
-    This function creates a csv file named 'name' in the format required for a submission in Kaggle or AIcrowd.
-    The file will contain two columns the first with 'ids' and the second with 'y_pred'.
-    y_pred must be a list or np.array of 1 and -1 otherwise the function will raise a ValueError.
+    Generate a CSV file for submission to Kaggle or AIcrowd.
 
     Args:
-        ids (list,np.array): indices
-        y_pred (list,np.array): predictions on data correspondent to indices
-        name (str): name of the file to be created
-    """
-    # Check that y_pred only contains -1 and 1
-    if not all(i in [-1, 1] for i in y_pred):
-        raise ValueError("y_pred can only contain values -1, 1")
+        ids (list or np.array): Data sample IDs.
+        y_pred (list or np.array): Predictions (must be -1 or 1).
+        name (str): Filename of the CSV to create.
 
+    Raises:
+        ValueError: If `y_pred` contains values other than -1 or 1.
+    """
+    # Validate predictions
+    if not all(i in [-1, 1] for i in y_pred):
+        raise ValueError("y_pred can only contain values -1 or 1")
+
+    # Write CSV file
     with open(name, "w", newline="") as csvfile:
         fieldnames = ["Id", "Prediction"]
         writer = csv.DictWriter(csvfile, delimiter=",", fieldnames=fieldnames)
