@@ -1,6 +1,7 @@
 import numpy as np
 from implementations import *
 
+
 def normalize(x, x_test=None):
     """Normalizes the data set to have zero mean and unit variance.
 
@@ -14,14 +15,15 @@ def normalize(x, x_test=None):
     """
     mean_x = np.nanmean(x, axis=0)
     std_x = np.nanstd(x, axis=0)
-    std_x[std_x == 0] = 1.0  # avoid division by zero    
-    
+    std_x[std_x == 0] = 1.0  # avoid division by zero
+
     x = (x - mean_x) / std_x
-    
+
     if x_test is not None:
         x_test = (x_test - mean_x) / std_x
         return x, x_test
     return x
+
 
 def min_max_normalize(x, x_test=None):
     """Min-max normalizes the data set to the range [0, 1].
@@ -37,18 +39,19 @@ def min_max_normalize(x, x_test=None):
 
     min_x = np.nanmin(x, axis=0)
     max_x = np.nanmax(x, axis=0)
-    range_x = max_x - min_x  
-    range_x[range_x == 0] = 1. # avoid division by zero 
+    range_x = max_x - min_x
+    range_x[range_x == 0] = 1.0  # avoid division by zero
 
     x = (x - min_x) / range_x
-    
+
     if x_test is not None:
         x_test = (x_test - min_x) / range_x
         return x, x_test
     return x
 
+
 def mean_imputation(x_train, x_test):
-    """Impute missing values with the mean of each feature. 
+    """Impute missing values with the mean of each feature.
     Drops columns that are entirely NaN.
 
     Args:
@@ -69,6 +72,7 @@ def mean_imputation(x_train, x_test):
     inds_test = np.where(np.isnan(x_test))
     x_test[inds_test] = mean_x[inds_test[1]]
 
+
 def replace_default_with_nan(x_train, x_test, default_values):
     """
     Replaces default values in the dataset with NaN.
@@ -85,6 +89,7 @@ def replace_default_with_nan(x_train, x_test, default_values):
         for default_value in default_values[i]:
             x_train[x_train[:, i] == default_value, i] = np.nan
             x_test[x_test[:, i] == default_value, i] = np.nan
+
 
 def replace_by_zero(x_train, x_test, zero_values):
     """
@@ -104,7 +109,8 @@ def replace_by_zero(x_train, x_test, zero_values):
 
         if zero_values[i] != None and np.isnan(zero_values[i]):
             x_train[np.isnan(x_train[:, i]), i] = 0
-            x_test[np.isnan(x_test[:,i]),i]=0
+            x_test[np.isnan(x_test[:, i]), i] = 0
+
 
 def convert_to_times_per_week(x, feature_flags):
     """
@@ -121,7 +127,7 @@ def convert_to_times_per_week(x, feature_flags):
     for i, flag in enumerate(feature_flags):
         if flag == 1:
             col = x[:, i].astype(float)
-            
+
             # Example conversion:
             # If values are coded like:
             # 101-199 → times per week (divide by 1 if already weekly)
@@ -131,7 +137,7 @@ def convert_to_times_per_week(x, feature_flags):
             # 999 → Refused → leave as np.nan
 
             # Replace "Never" and "Don't know / Refused" with NaN
-            col[col == 888] = 0      # Never = 0 times/week
+            col[col == 888] = 0  # Never = 0 times/week
             col[col == 777] = np.nan
             col[col == 999] = np.nan
 
@@ -142,6 +148,7 @@ def convert_to_times_per_week(x, feature_flags):
             x[:, i] = col
 
     return x
+
 
 def split_train_val(x_train, y_train, val_size=0.1, random_seed=42):
     """
@@ -172,6 +179,7 @@ def split_train_val(x_train, y_train, val_size=0.1, random_seed=42):
     y_train_new = y_train[train_indices]
 
     return x_train_new, y_train_new, x_val, y_val
+
 
 def drop_too_many_missing(x_train, x_test, train_columns, threshold=0.2):
     """
@@ -206,6 +214,7 @@ def drop_too_many_missing(x_train, x_test, train_columns, threshold=0.2):
 
     return x_train_reduced, x_test_reduced, cols_to_keep
 
+
 def identify_too_many_missing(x_train, feature_names, threshold=0.2):
     """
     Return feature names with more than a given percentage of missing values (NaNs).
@@ -230,6 +239,7 @@ def identify_too_many_missing(x_train, feature_names, threshold=0.2):
     dropped_names = [feature_names[i] for i in dropped_cols]
     return dropped_names
 
+
 def identify_low_correlation(x_train, y_train, feature_names, threshold=0.1):
     """
     Return feature names with correlation to target below a given threshold.
@@ -244,17 +254,20 @@ def identify_low_correlation(x_train, y_train, feature_names, threshold=0.1):
         low_corr_names (list): names of features with low correlation to target
         correlations (np.array): array of correlation values for all features
     """
-    correlations = np.array([np.corrcoef(x_train[:, i], y_train)[0, 1] for i in range(x_train.shape[1])])
+    correlations = np.array(
+        [np.corrcoef(x_train[:, i], y_train)[0, 1] for i in range(x_train.shape[1])]
+    )
     low_corr_mask = np.abs(correlations) < threshold
     low_corr_names = [feature_names[i] for i in np.where(low_corr_mask)[0]]
-    
+
     return low_corr_names, correlations
+
 
 def replace_nan(x_train, x_test, continuous_flag):
     for i in range(x_train.shape[1]):
         # Get non-nan values
         non_nan_values = x_train[~np.isnan(x_train[:, i]), i]
-    
+
         if continuous_flag[i] == 0:
             # Use mode for categorical features
             mode = np.bincount(non_nan_values.astype(int)).argmax()
@@ -268,10 +281,12 @@ def replace_nan(x_train, x_test, continuous_flag):
     return x_train, x_test
 
     return cat
+
+
 def drop_highly_correlated(x_train, feature_names, threshold=0.9):
     """
     Identify features that are highly correlated with each other. From each highly correlated pair,
-    the feature with more missing values (NaNs) is marked for dropping. 
+    the feature with more missing values (NaNs) is marked for dropping.
 
     Args:
         x_train (np.array): shape = (N, D) training feature matrix
@@ -305,6 +320,7 @@ def drop_highly_correlated(x_train, feature_names, threshold=0.9):
 
     return dropped_names, corr_matrix
 
+
 def clip_outliers(x_train, x_test=None, n_std=3):
     """
     Clips outliers to within mean ± n_std * std for each feature.
@@ -323,7 +339,7 @@ def clip_outliers(x_train, x_test=None, n_std=3):
     """
     mean = np.mean(x_train, axis=0)
     std = np.std(x_train, axis=0)
-    
+
     clip_min = mean - n_std * std
     clip_max = mean + n_std * std
 
@@ -335,19 +351,24 @@ def clip_outliers(x_train, x_test=None, n_std=3):
     # Apply clipping
     x_train_clipped = np.clip(x_train, clip_min, clip_max)
 
-    print(f"Clipped {n_clipped} values in x_train "
-          f"({n_clipped / x_train.size * 100:.2f}% of all entries)")
+    print(
+        f"Clipped {n_clipped} values in x_train "
+        f"({n_clipped / x_train.size * 100:.2f}% of all entries)"
+    )
 
     if x_test is not None:
         below_min_test = x_test < clip_min
         above_max_test = x_test > clip_max
         n_clipped_test = np.sum(below_min_test | above_max_test)
         x_test_clipped = np.clip(x_test, clip_min, clip_max)
-        print(f"Clipped {n_clipped_test} values in x_test "
-              f"({n_clipped_test / x_test.size * 100:.2f}%)")
+        print(
+            f"Clipped {n_clipped_test} values in x_test "
+            f"({n_clipped_test / x_test.size * 100:.2f}%)"
+        )
         return x_train_clipped, x_test_clipped, n_clipped, n_clipped_test
 
     return x_train_clipped, n_clipped
+
 
 def pca_reduce(x_train, x_test=None, variance_threshold=0.95):
     """
@@ -364,7 +385,6 @@ def pca_reduce(x_train, x_test=None, variance_threshold=0.95):
         eigvecs (np.array): principal component directions
         explained_variance (np.array): explained variance ratio per component
     """
-  
 
     # Covariance
     cov = np.cov(x_train, rowvar=False)
@@ -382,7 +402,9 @@ def pca_reduce(x_train, x_test=None, variance_threshold=0.95):
 
     # Determine number of components
     k = np.searchsorted(cumulative_variance, variance_threshold) + 1
-    print(f"Keeping {k} components explaining {cumulative_variance[k-1]*100:.2f}% variance")
+    print(
+        f"Keeping {k} components explaining {cumulative_variance[k-1]*100:.2f}% variance"
+    )
 
     # Project data
     x_train_pca = np.dot(x_train, eigvecs[:, :k])
@@ -405,21 +427,25 @@ def drop_features_from_dictionnary(data_dict, feature_names_to_drop):
         data_dict (dict): dictionnary containing the data and meta-data with features dropped
     """
     for feature_name in feature_names_to_drop:
-        if feature_name in data_dict['feature_names']:
-            index = np.where(data_dict['feature_names'] == feature_name)[0][0]
-            data_dict['x_train'] = np.delete(data_dict['x_train'], index, axis=1)
-            data_dict['x_test'] = np.delete(data_dict['x_test'], index, axis=1)
-            data_dict['feature_names'] = np.delete(data_dict['feature_names'], index)
-            data_dict['useless'] = np.delete(data_dict['useless'], index)
-            data_dict['health_related'] = np.delete(data_dict['health_related'], index)
-            data_dict['better_elsewhere'] = np.delete(data_dict['better_elsewhere'], index)
-            data_dict['bad_format_no_better'] = np.delete(data_dict['bad_format_no_better'], index)
-            data_dict['binary'] = np.delete(data_dict['binary'], index)
-            data_dict['one_hot'] = np.delete(data_dict['one_hot'], index)
-            data_dict['zero_values'] = np.delete(data_dict['zero_values'], index)
-            data_dict['default_values'] = np.delete(data_dict['default_values'], index)
-            data_dict['ordinal'] = np.delete(data_dict['ordinal'], index)
-            data_dict['continuous'] = np.delete(data_dict['continuous'], index)
+        if feature_name in data_dict["feature_names"]:
+            index = np.where(data_dict["feature_names"] == feature_name)[0][0]
+            data_dict["x_train"] = np.delete(data_dict["x_train"], index, axis=1)
+            data_dict["x_test"] = np.delete(data_dict["x_test"], index, axis=1)
+            data_dict["feature_names"] = np.delete(data_dict["feature_names"], index)
+            data_dict["useless"] = np.delete(data_dict["useless"], index)
+            data_dict["health_related"] = np.delete(data_dict["health_related"], index)
+            data_dict["better_elsewhere"] = np.delete(
+                data_dict["better_elsewhere"], index
+            )
+            data_dict["bad_format_no_better"] = np.delete(
+                data_dict["bad_format_no_better"], index
+            )
+            data_dict["binary"] = np.delete(data_dict["binary"], index)
+            data_dict["one_hot"] = np.delete(data_dict["one_hot"], index)
+            data_dict["zero_values"] = np.delete(data_dict["zero_values"], index)
+            data_dict["default_values"] = np.delete(data_dict["default_values"], index)
+            data_dict["ordinal"] = np.delete(data_dict["ordinal"], index)
+            data_dict["continuous"] = np.delete(data_dict["continuous"], index)
         else:
             print(f"Feature {feature_name} not found in feature names.")
 
@@ -433,104 +459,161 @@ def one_hot_encode(data_dict):
     Returns:
         data_dict (dict): dictionnary containing the data and meta-data with categorical features one-hot encoded
     """
-    one_hot_features = data_dict['feature_names'][data_dict['one_hot'] == 1]
-    binary_features = data_dict['feature_names'][data_dict['binary'] == 1]
+    one_hot_features = data_dict["feature_names"][data_dict["one_hot"] == 1]
+    binary_features = data_dict["feature_names"][data_dict["binary"] == 1]
 
     for feature in one_hot_features:
         if feature not in binary_features:
             # Get unique values for the feature
-            unique_values = np.unique(data_dict['x_train'][:, np.where(data_dict['feature_names'] == feature)[0][0]])
+            unique_values = np.unique(
+                data_dict["x_train"][
+                    :, np.where(data_dict["feature_names"] == feature)[0][0]
+                ]
+            )
             for value in unique_values:
                 # Create one-hot encoded feature
-                idx = np.where(data_dict['feature_names'] == feature)[0][0]
+                idx = np.where(data_dict["feature_names"] == feature)[0][0]
 
-                one_hot_encoded = (data_dict['x_train'][:, idx] == value).astype(int)
-                data_dict['x_train'] = np.column_stack((data_dict['x_train'], one_hot_encoded))
+                one_hot_encoded = (data_dict["x_train"][:, idx] == value).astype(int)
+                data_dict["x_train"] = np.column_stack(
+                    (data_dict["x_train"], one_hot_encoded)
+                )
 
-                one_hot_encoded_test = (data_dict['x_test'][:, idx] == value).astype(int)
-                data_dict['x_test'] = np.column_stack((data_dict['x_test'], one_hot_encoded_test))
+                one_hot_encoded_test = (data_dict["x_test"][:, idx] == value).astype(
+                    int
+                )
+                data_dict["x_test"] = np.column_stack(
+                    (data_dict["x_test"], one_hot_encoded_test)
+                )
 
-                data_dict['feature_names'] = np.append(data_dict['feature_names'], f"{feature}_{value}")
-                data_dict['useless'] = np.append(data_dict['useless'], data_dict['useless'][idx])
-                data_dict['health_related'] = np.append(data_dict['health_related'], data_dict['health_related'][idx])
-                data_dict['better_elsewhere'] = np.append(data_dict['better_elsewhere'], data_dict['better_elsewhere'][idx])
-                data_dict['bad_format_no_better'] = np.append(data_dict['bad_format_no_better'], data_dict['bad_format_no_better'][idx])
-                data_dict['binary'] = np.append(data_dict['binary'], 1)
-                data_dict['one_hot'] = np.append(data_dict['one_hot'], 1)
-                data_dict['zero_values'] = np.append(data_dict['zero_values'], data_dict['zero_values'][idx])
-                data_dict['default_values'] = np.append(data_dict['default_values'], data_dict['default_values'][idx])
-                data_dict['ordinal'] = np.append(data_dict['ordinal'], data_dict['ordinal'][idx])
-                data_dict['continuous'] = np.append(data_dict['continuous'], data_dict['continuous'][idx])
+                data_dict["feature_names"] = np.append(
+                    data_dict["feature_names"], f"{feature}_{value}"
+                )
+                data_dict["useless"] = np.append(
+                    data_dict["useless"], data_dict["useless"][idx]
+                )
+                data_dict["health_related"] = np.append(
+                    data_dict["health_related"], data_dict["health_related"][idx]
+                )
+                data_dict["better_elsewhere"] = np.append(
+                    data_dict["better_elsewhere"], data_dict["better_elsewhere"][idx]
+                )
+                data_dict["bad_format_no_better"] = np.append(
+                    data_dict["bad_format_no_better"],
+                    data_dict["bad_format_no_better"][idx],
+                )
+                data_dict["binary"] = np.append(data_dict["binary"], 1)
+                data_dict["one_hot"] = np.append(data_dict["one_hot"], 1)
+                data_dict["zero_values"] = np.append(
+                    data_dict["zero_values"], data_dict["zero_values"][idx]
+                )
+                data_dict["default_values"] = np.append(
+                    data_dict["default_values"], data_dict["default_values"][idx]
+                )
+                data_dict["ordinal"] = np.append(
+                    data_dict["ordinal"], data_dict["ordinal"][idx]
+                )
+                data_dict["continuous"] = np.append(
+                    data_dict["continuous"], data_dict["continuous"][idx]
+                )
 
             # Drop the original feature
-            idx = np.where(data_dict['feature_names'] == feature)[0][0]
-            data_dict['x_train'] = np.delete(data_dict['x_train'], idx, axis=1)
-            data_dict['x_test'] = np.delete(data_dict['x_test'], idx, axis=1)
-            data_dict['feature_names'] = np.delete(data_dict['feature_names'], idx)
-            data_dict['useless'] = np.delete(data_dict['useless'], idx)
-            data_dict['health_related'] = np.delete(data_dict['health_related'], idx)
-            data_dict['better_elsewhere'] = np.delete(data_dict['better_elsewhere'], idx)
-            data_dict['bad_format_no_better'] = np.delete(data_dict['bad_format_no_better'], idx)
-            data_dict['binary'] = np.delete(data_dict['binary'], idx)
-            data_dict['one_hot'] = np.delete(data_dict['one_hot'], idx)
-            data_dict['zero_values'] = np.delete(data_dict['zero_values'], idx)
-            data_dict['default_values'] = np.delete(data_dict['default_values'], idx)
-            data_dict['ordinal'] = np.delete(data_dict['ordinal'], idx)
-            data_dict['continuous'] = np.delete(data_dict['continuous'], idx)
+            idx = np.where(data_dict["feature_names"] == feature)[0][0]
+            data_dict["x_train"] = np.delete(data_dict["x_train"], idx, axis=1)
+            data_dict["x_test"] = np.delete(data_dict["x_test"], idx, axis=1)
+            data_dict["feature_names"] = np.delete(data_dict["feature_names"], idx)
+            data_dict["useless"] = np.delete(data_dict["useless"], idx)
+            data_dict["health_related"] = np.delete(data_dict["health_related"], idx)
+            data_dict["better_elsewhere"] = np.delete(
+                data_dict["better_elsewhere"], idx
+            )
+            data_dict["bad_format_no_better"] = np.delete(
+                data_dict["bad_format_no_better"], idx
+            )
+            data_dict["binary"] = np.delete(data_dict["binary"], idx)
+            data_dict["one_hot"] = np.delete(data_dict["one_hot"], idx)
+            data_dict["zero_values"] = np.delete(data_dict["zero_values"], idx)
+            data_dict["default_values"] = np.delete(data_dict["default_values"], idx)
+            data_dict["ordinal"] = np.delete(data_dict["ordinal"], idx)
+            data_dict["continuous"] = np.delete(data_dict["continuous"], idx)
+
 
 def print_shapes(data):
     for key, value in data.items():
-        print(f"{key}: {type(value)} with shape {value.shape if isinstance(value, np.ndarray) else 'N/A'}")
+        print(
+            f"{key}: {type(value)} with shape {value.shape if isinstance(value, np.ndarray) else 'N/A'}"
+        )
 
 
-def preprocess_data(data, nan_drop_threshold=0.2, correlation_threshold=0.02, n_std=3, only_health_related=True, split_val=False, val_size=0.1):
-    
+def preprocess_data(
+    data,
+    nan_drop_threshold=0.2,
+    correlation_threshold=0.02,
+    n_std=3,
+    only_health_related=True,
+    split_val=False,
+    val_size=0.1,
+):
+
     # Replace zeros and default values before preprocessing
-    convert_to_times_per_week(data['x_train'], data['bad_format_no_better'])
-    convert_to_times_per_week(data['x_test'], data['bad_format_no_better'])
-    replace_by_zero(data['x_train'], data['x_test'], data['zero_values'])
-    replace_default_with_nan(data['x_train'], data['x_test'], data['default_values'])
+    convert_to_times_per_week(data["x_train"], data["bad_format_no_better"])
+    convert_to_times_per_week(data["x_test"], data["bad_format_no_better"])
+    replace_by_zero(data["x_train"], data["x_test"], data["zero_values"])
+    replace_default_with_nan(data["x_train"], data["x_test"], data["default_values"])
     print_shapes(data)
 
     # Identify and drop features with many missing values
-    nan_features = identify_too_many_missing(data["x_train"], data["feature_names"], threshold=nan_drop_threshold)
+    nan_features = identify_too_many_missing(
+        data["x_train"], data["feature_names"], threshold=nan_drop_threshold
+    )
     drop_features_from_dictionnary(data, nan_features)
     print(len(nan_features), "features with too many missing values dropped.")
 
     # Replace remaining NaNs with either mean or most frequent value
-    replace_nan(data["x_train"], data["x_test"], data['continuous'])
+    replace_nan(data["x_train"], data["x_test"], data["continuous"])
 
     # Keep only health-related features if specified
     if only_health_related:
-        non_health_features = data['feature_names'][~data['health_related']].tolist()
+        non_health_features = data["feature_names"][~data["health_related"]].tolist()
         drop_features_from_dictionnary(data, non_health_features)
         print(len(non_health_features), "non health-related features dropped.")
 
     # One-hot encode categorical features
-    n_features_before = data['x_train'].shape[1]
+    n_features_before = data["x_train"].shape[1]
     one_hot_encode(data)
-    n_features_after = data['x_train'].shape[1]
-    print(f"One-hot encoding completed. Number of features increased from {n_features_before} to {n_features_after}.")
+    n_features_after = data["x_train"].shape[1]
+    print(
+        f"One-hot encoding completed. Number of features increased from {n_features_before} to {n_features_after}."
+    )
 
     # Identify and drop features with low correlation to the target
-    low_corr_features, _ = identify_low_correlation(data["x_train"], data["y_train"], data["feature_names"], threshold=correlation_threshold)
+    low_corr_features, _ = identify_low_correlation(
+        data["x_train"],
+        data["y_train"],
+        data["feature_names"],
+        threshold=correlation_threshold,
+    )
     drop_features_from_dictionnary(data, low_corr_features)
     print(len(low_corr_features), "features with low correlation to target dropped.")
-    
+
     # Identify and drop features with high correlation twithin one another
-    high_corr_features, _ = drop_highly_correlated(data["x_train"], data["feature_names"])
+    high_corr_features, _ = drop_highly_correlated(
+        data["x_train"], data["feature_names"]
+    )
     drop_features_from_dictionnary(data, high_corr_features)
     print(len(high_corr_features), "features with high correlation dropped.")
 
-    #Clip outliers
-    clip_outliers(data['x_train'], data['x_test'], n_std=n_std)
+    # Clip outliers
+    clip_outliers(data["x_train"], data["x_test"], n_std=n_std)
 
-    #Normalize features
-    data['x_train'], data['x_test'] = min_max_normalize(data['x_train'], data['x_test'])
-    data['y_train'] = (data['y_train'] == 1).astype(int)
+    # Normalize features
+    data["x_train"], data["x_test"] = min_max_normalize(data["x_train"], data["x_test"])
+    data["y_train"] = (data["y_train"] == 1).astype(int)
 
     if split_val:
-        data['x_train'], data['y_train'], data['x_val'], data['y_val'] = split_train_val(data['x_train'], data['y_train'], val_size=val_size)
+        data["x_train"], data["y_train"], data["x_val"], data["y_val"] = (
+            split_train_val(data["x_train"], data["y_train"], val_size=val_size)
+        )
 
 
 def oversample_data(x, y, ratio=1.0, seed=42):
@@ -571,5 +654,3 @@ def oversample_data(x, y, ratio=1.0, seed=42):
     # Shuffle
     perm = np.random.permutation(len(y_res))
     return x_res[perm], y_res[perm]
-
-
