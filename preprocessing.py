@@ -553,6 +553,8 @@ def preprocess_data(
     only_health_related=True,
     split_val=False,
     val_size=0.1,
+    one_hot=True,
+    drop_correlated=True,
 ):
 
     # Replace zeros and default values before preprocessing
@@ -579,12 +581,13 @@ def preprocess_data(
         print(len(non_health_features), "non health-related features dropped.")
 
     # One-hot encode categorical features
-    n_features_before = data["x_train"].shape[1]
-    one_hot_encode(data)
-    n_features_after = data["x_train"].shape[1]
-    print(
-        f"One-hot encoding completed. Number of features increased from {n_features_before} to {n_features_after}."
-    )
+    if one_hot:
+        n_features_before = data["x_train"].shape[1]
+        one_hot_encode(data)
+        n_features_after = data["x_train"].shape[1]
+        print(
+            f"One-hot encoding completed. Number of features increased from {n_features_before} to {n_features_after}."
+        )
 
     # Identify and drop features with low correlation to the target
     low_corr_features, _ = identify_low_correlation(
@@ -597,11 +600,12 @@ def preprocess_data(
     print(len(low_corr_features), "features with low correlation to target dropped.")
 
     # Identify and drop features with high correlation twithin one another
-    high_corr_features, _ = drop_highly_correlated(
-        data["x_train"], data["feature_names"]
-    )
-    drop_features_from_dictionnary(data, high_corr_features)
-    print(len(high_corr_features), "features with high correlation dropped.")
+    if drop_correlated:
+        high_corr_features, _ = drop_highly_correlated(
+            data["x_train"], data["feature_names"]
+        )
+        drop_features_from_dictionnary(data, high_corr_features)
+        print(len(high_corr_features), "features with high correlation dropped.")
 
     # Clip outliers
     clip_outliers(data["x_train"], data["x_test"], n_std=n_std)
