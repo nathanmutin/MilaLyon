@@ -80,7 +80,7 @@ def replace_default_with_nan(x_train, x_test, default_values):
     Args:
         x_train (np.array): shape = (N, D) training feature matrix
         x_test (np.array): shape = (M, D) test feature matrix
-        default_values (dict of lists): dictionary of default values for each feature
+        default_values (np.array): array of default values for each feature
 
     Returns:
         None: The function modifies x_train and x_test in place.

@@ -60,7 +60,7 @@ def load_csv_data(data_path, max_rows=None, dictionnary=False):
         feature_names = f.readline().strip().split(",")[1:]  # skip "Id"
     feature_names = np.array(feature_names)
 
-    # The file "default_values.csv" contains default values for each feature
+    # The file "features_description.csv" contains useful information for each feature
     # First line is header
     # Columns are:
     # - Feature
@@ -74,7 +74,7 @@ def load_csv_data(data_path, max_rows=None, dictionnary=False):
     # - Value for no response 1
     # - Value for no response 2
     # - ...
-    with open(os.path.join(data_path, "default_values.csv"), "r") as f:
+    with open(os.path.join(data_path, "features_description.csv"), "r") as f:
         reader = csv.reader(f, delimiter=",")
         next(reader)  # Skip header
 
@@ -98,7 +98,7 @@ def load_csv_data(data_path, max_rows=None, dictionnary=False):
             # Check that feature_name matches the i-th feature of the dataset
             if feature_name != feature_names[i]:
                 raise ValueError(
-                    f"Feature n°{i} mismatch in default_values.csv: {feature_name} != {feature_names[i]}"
+                    f"Feature n°{i} mismatch in features_description.csv: {feature_name} != {feature_names[i]}"
                 )
 
             # Second column is the value representing zero
