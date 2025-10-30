@@ -30,9 +30,12 @@ The files provided are:
 
 Respondents were classified as having MICHD if a health professional had diagnosed them or they had experienced a heart attack or angina.
 
+
 ## Usage
 
 To run the project, ensure you have a working Python environment with the necessary libraries installed. Only numpy and matplotlib are used.
+
+
 
 The data can be extracted from `data/dataset.zip` and placed in the `data/` directory such that the structure looks like this:
 
@@ -43,6 +46,16 @@ data/
     x_test.csv
     features_description.csv
 ```
+
+### Optional: Conda Environment
+
+For convenience and reproducibility, you can use the provided Conda environment:
+
+```bash
+conda env create -f environment.yml
+conda activate milalyon
+```
+
 
 ## Repo Structure
 
