@@ -22,10 +22,10 @@ DATA_FOLDER = "C:/Users/ACER/OneDrive - epfl.ch/Desktop/ML/dataset/"
 OUTPUT_FILE = "logistic_regression_submission.csv"
 
 # Hyperparameters previously determined via cross-validation
-BEST_GAMMA = 0.8
+BEST_GAMMA = 0.5
 BEST_DEGREE = 2
 MAX_ITERS = 1000
-BEST_THRESHOLD = 0.38
+BEST_THRESHOLD = 0.17
 
 # -------------------------------------------------------------
 # Main pipeline
