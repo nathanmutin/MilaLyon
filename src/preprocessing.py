@@ -261,6 +261,7 @@ def preprocess_data(
     val_size=0.1,
     one_hot=True,
     drop_correlated=True,
+    replace_values=True,
 ):
     """
     Preprocess data dictionary with standard steps:
@@ -290,8 +291,9 @@ def preprocess_data(
     # ---------------------- Step 1: Clean & Convert ----------------------
     convert_to_times_per_week(data["x_train"], data["bad_format_no_better"])
     convert_to_times_per_week(data["x_test"], data["bad_format_no_better"])
-    replace_by_zero(data["x_train"], data["x_test"], data["zero_values"])
-    replace_default_with_nan(data["x_train"], data["x_test"], data["default_values"])
+    if replace_values:
+        replace_by_zero(data["x_train"], data["x_test"], data["zero_values"])
+        replace_default_with_nan(data["x_train"], data["x_test"], data["default_values"])
 
     print("Initial data shapes:")
     print_shapes(data)
