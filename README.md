@@ -84,6 +84,7 @@ The repository is organized as follows:
     - `crossvalidation.ipynb` — Jupyter Notebook for hyperparameter tuning using cross-validation.
     - `run_no_process.ipynb` — Jupyter Notebbok for training logistic regression without applying full preprocessing.
     - `run_no_process_poly.ipynb` — Jupyter Notebbok for training logistic regression with polynomial features without applying full preprocessing.
+    - `run_no_process_no_values.ipynb` — Jupyter Notebbok for training logistic regression without applying full preprocessing and without replacing values.
     - `run.py` — Main script to execute the entire pipeline from data loading to model training and submission generation. The hyperparameters can be adjusted in this file but are set to optimal values found during cross-validation by default.
 
 - `report/` — Contains the Report and the Project Description.
