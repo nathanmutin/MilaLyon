@@ -164,7 +164,7 @@ def convert_to_times_per_week(x, feature_flags):
     return x
 
 
-def split_train_val(x_train, y_train, val_size=0.1, random_seed=42):
+def split_train_val(x_train, y_train, val_size=0.1, random_seed=44):
     """
     Splits the training data into training and validation sets.
 
