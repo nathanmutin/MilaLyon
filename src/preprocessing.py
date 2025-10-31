@@ -586,6 +586,22 @@ def preprocess_data(
     drop_correlated=True,
     replace_values=True,
 ):
+    """
+    Preprocess the data according to specified parameters.
+    Args:
+        data (dict): dictionnary containing the data and meta-data
+        nan_drop_threshold (float): threshold for dropping features with too many NaNs
+        correlation_threshold (float): threshold for dropping features with low correlation to target
+        n_std (float): number of standard deviations for outlier clipping
+        only_health_related (bool): whether to keep only health-related features
+        split_val (bool): whether to split training data into training and validation sets
+        val_size (float): fraction of data to use for validation if split_val is True
+        one_hot (bool): whether to one-hot encode categorical features
+        drop_correlated (bool): whether to drop highly correlated features
+        replace_values (bool): whether to replace specified values before preprocessing
+    Returns:
+        None: The function modifies the data dictionnary in place.
+    """
 
     # Replace zeros and default values before preprocessing
     convert_to_times_per_week(data["x_train"], data["bad_format_no_better"])
